@@ -1,0 +1,169 @@
+import { useState, type FormEvent } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Chip } from '../../components/ui/Bits';
+import { ArrowButton } from '../../components/ui/Button';
+import { Icon, type IconName } from '../../components/ui/Icon';
+import { ActionBar, PageHeader, Screen } from '../../components/ui/Layout';
+import { usePortalData } from '../../state/portal';
+import type { FamilyMember } from '../../types';
+
+const CHILD_REL = ['Son', 'Daughter', 'Parent (dependant)', 'Other'];
+const ADULT_REL = ['Spouse', 'Parent', 'Sibling', 'Other'];
+const PALETTE = ['#9CC9FF', '#C9B2FF', '#FFA7DC', '#FFB690', '#FFC27A'];
+const none = { book: false, rx: false, reports: false, bills: false };
+
+function OptionCard({ icon, bg, title, sub, on, onClick }: { icon: IconName; bg: string; title: string; sub: string; on: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="radio"
+      aria-checked={on}
+      onClick={onClick}
+      className={`flex w-full items-center gap-3 rounded-[22px] p-3.5 text-left ${on ? 'bg-ink text-surface' : 'bg-surface/75'}`}
+    >
+      <span className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[16px] text-ink" style={{ background: bg }}>
+        <Icon name={icon} />
+      </span>
+      <span className="flex flex-1 flex-col gap-0.5">
+        <span className="text-[16px] font-semibold">{title}</span>
+        <span className={`text-[13px] ${on ? 'opacity-80' : 'text-text-muted'}`}>{sub}</span>
+      </span>
+    </button>
+  );
+}
+
+const ageFromDob = (dob: string) => {
+  const m = /(\d{4})\s*$/.exec(dob);
+  return m ? Math.max(0, 2026 - Number(m[1])) : undefined;
+};
+
+export function AddFamily() {
+  const { data, actions } = usePortalData();
+  const navigate = useNavigate();
+  const [mode, setMode] = useState<'child' | 'invite'>('child');
+  const [rel, setRel] = useState('Son');
+  const [name, setName] = useState('');
+  const [dob, setDob] = useState('');
+  const [phone, setPhone] = useState('');
+  const [error, setError] = useState('');
+
+  const switchMode = (m: 'child' | 'invite') => {
+    setMode(m);
+    setRel(m === 'child' ? 'Son' : 'Parent');
+    setError('');
+  };
+
+  const first = name.trim().split(/\s+/)[0];
+  const cta = mode === 'child' ? (first ? `Add ${first}` : 'Add member') : 'Send invite';
+
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const digits = phone.replace(/\D/g, '');
+    if (!name.trim()) return setError(mode === 'child' ? 'Add their full name.' : 'Add their name so you recognise the invite.');
+    if (mode === 'invite' && digits.length !== 10) return setError('Enter their 10-digit mobile number.');
+    const initials = name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase())
+      .join('');
+    const relation = rel.replace(' (dependant)', '');
+    const member: FamilyMember = {
+      id: `m-${Date.now()}`,
+      name: name.trim(),
+      firstName: first,
+      initials,
+      color: mode === 'child' ? PALETTE[data.family.length % PALETTE.length] : '#FDFCFB',
+      relation,
+      kind: mode === 'child' ? 'dependant' : 'pending',
+      note: mode === 'child' ? 'Dependant under 18' : 'Invite sent just now',
+      age: mode === 'child' ? ageFromDob(dob) : undefined,
+      theyAllow: mode === 'child' ? { book: true, rx: true, reports: true, bills: true } : none,
+      youAllow: none,
+    };
+    actions.addMember(member);
+    navigate('/done', {
+      replace: true,
+      state:
+        mode === 'child'
+          ? { title: `${first} is in your family`, body: `You can now book visits and see ${first}'s records at any DigiRx clinic.`, primary: { label: 'Back to family', to: '/family' } }
+          : { title: 'Invite sent', body: `We've sent ${first} an SMS. Nothing is shared until they accept and choose permissions.`, primary: { label: 'Back to family', to: '/family' } },
+    });
+  };
+
+  return (
+    <Screen>
+      <form onSubmit={submit} noValidate className="flex flex-col">
+        <PageHeader back="/family" />
+        <h1 className="h1 mt-5">Add to your family</h1>
+
+        <div role="radiogroup" aria-label="Member type" className="mt-[18px] flex flex-col gap-2">
+          <OptionCard icon="user" bg="#9CC9FF" title="Add a child or dependant" sub="You manage their profile and bookings" on={mode === 'child'} onClick={() => switchMode('child')} />
+          <OptionCard icon="chat" bg="#FFA7DC" title="Invite an adult" sub="They accept and choose what to share" on={mode === 'invite'} onClick={() => switchMode('invite')} />
+          <Link to="/family/link" className="flex w-full items-center gap-3 rounded-[22px] bg-surface/75 p-3.5">
+            <span className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[16px] bg-lavender">
+              <Icon name="link" />
+            </span>
+            <span className="flex flex-1 flex-col gap-0.5">
+              <span className="text-[16px] font-semibold">Link an existing patient</span>
+              <span className="text-[13px] text-text-muted">Already registered at a DigiRx clinic</span>
+            </span>
+            <Icon name="forward" />
+          </Link>
+        </div>
+
+        <span className="label mb-2 mt-4 block" id="rel-l">
+          Relationship
+        </span>
+        <div role="group" aria-labelledby="rel-l" className="flex flex-wrap gap-2">
+          {(mode === 'child' ? CHILD_REL : ADULT_REL).map((r) => (
+            <Chip key={r} size="md" surface="solid" on={rel === r} onClick={() => setRel(r)}>
+              {r}
+            </Chip>
+          ))}
+        </div>
+
+        <label className="label mb-2 mt-4 block" htmlFor="fname">
+          {mode === 'child' ? 'Full name' : 'Their name'}
+        </label>
+        <input id="fname" className="field" value={name} onChange={(e) => { setName(e.target.value); setError(''); }} autoComplete="off" />
+
+        {mode === 'child' ? (
+          <>
+            <label className="label mb-2 mt-4 block" htmlFor="fdob">
+              Date of birth
+            </label>
+            <input id="fdob" className="field" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="DD / MM / YYYY" inputMode="numeric" />
+            <span className="mt-2.5 block text-[12px] leading-[1.45] text-text-muted">
+              {first ? `When ${first} turns 18, they'll` : "At 18 they'll"} be asked to take over their own account.
+            </span>
+          </>
+        ) : (
+          <>
+            <label className="label mb-2 mt-4 block" htmlFor="fphone">
+              Their mobile number
+            </label>
+            <div className="flex gap-2">
+              <span className="field flex !w-auto items-center font-medium">+91</span>
+              <input id="fphone" type="tel" inputMode="numeric" className="field flex-1" value={phone} onChange={(e) => { setPhone(e.target.value); setError(''); }} placeholder="98860 44120" />
+            </div>
+            <span className="mt-2.5 block text-[12px] leading-[1.45] text-text-muted">We'll send an SMS invite. Nothing is shared until they accept and choose permissions.</span>
+          </>
+        )}
+
+        {error && (
+          <p role="alert" className="m-0 mt-3 flex items-center gap-1.5 text-[13px] font-medium text-bad-fg">
+            <Icon name="alert" size={16} />
+            {error}
+          </p>
+        )}
+
+        <ActionBar>
+          <ArrowButton type="submit" wide>
+            {cta}
+          </ArrowButton>
+        </ActionBar>
+      </form>
+    </Screen>
+  );
+}

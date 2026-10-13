@@ -1,0 +1,14 @@
+{
+  "name": "digirx-patient",
+  "private": true,
+  "version": "0.1.0",
+  "description": "DigiRx Patient Portal — MERN app (client first; server to follow)",
+  "workspaces": [
+    "client"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w client",
+    "build": "npm run build -w client",
+    "preview": "npm run preview -w client"
+  }
+}
