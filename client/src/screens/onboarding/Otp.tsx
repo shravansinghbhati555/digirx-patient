@@ -80,72 +80,107 @@ export function Otp() {
 
   return (
     <AuthFrame bg="bg-screen">
-      <form onSubmit={submit} className="flex flex-col px-6 pt-[max(24px,env(safe-area-inset-top))]">
+      <form
+        onSubmit={submit}
+        className="relative z-10 flex flex-col px-6 pt-[max(24px,env(safe-area-inset-top))]"
+      >
         <BackButton fallback="/login" />
 
-        <div className="relative mt-11 h-[88px] w-[88px]">
-          <Face size={88} spec={faces.calm} rotate={-8} />
-          <span className="absolute -bottom-1.5 -right-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-ink text-surface">
-            <Icon name="lock" size={18} />
-          </span>
-        </div>
+        <div className="flex flex-col md:mx-auto md:mt-[90px] md:max-w-[1200px] md:flex-row md:items-start md:justify-center md:gap-6">
+          {/* First div: Heading and description */}
+          <div className="w-full md:mt-[45px] md:w-[30%]">
+            <div className="relative mt-11 h-[88px] w-[88px] md:mt-0">
+              <Face size={88} spec={faces.calm} rotate={-8} />
+              <span className="absolute -bottom-1.5 -right-2.5 flex h-9 w-9 items-center justify-center rounded-full bg-ink text-surface">
+                <Icon name="lock" size={18} />
+              </span>
+            </div>
 
-        <h1 className="m-0 mt-7 text-[34px] font-semibold leading-[1.12] tracking-[-0.03em]">Enter the 6-digit code</h1>
-        <p className="m-0 mt-3 text-[15px] leading-[1.45] text-text-muted">
-          Sent by SMS to <strong className="font-semibold text-ink">{state.pendingPhone}</strong> ·{' '}
-          <Link to="/login" className="font-medium underline">
-            Change
-          </Link>
-        </p>
-
-        <fieldset className="m-0 mt-8 border-0 p-0">
-          <legend className="sr-only">One-time password</legend>
-          <div className="flex justify-between gap-2" onPaste={onPaste}>
-            {digits.map((d, i) => (
-              <input
-                key={i}
-                ref={(el) => {
-                  inputs.current[i] = el;
-                }}
-                aria-label={`Digit ${i + 1}`}
-                inputMode="numeric"
-                autoComplete={i === 0 ? 'one-time-code' : 'off'}
-                maxLength={1}
-                value={d}
-                onChange={(e) => onChange(i, e.target.value)}
-                onKeyDown={(e) => onKeyDown(i, e)}
-                aria-invalid={!!error}
-                className={`h-[60px] w-12 min-w-0 flex-1 rounded-input text-center text-[24px] font-semibold outline-none ${
-                  error ? 'border-2 border-danger bg-[#FFF5F5]' : 'border border-white bg-surface focus:border-2 focus:border-ink'
-                }`}
-              />
-            ))}
+            <h1 className="m-0 mt-7 text-[34px] font-semibold leading-[1.12] tracking-[-0.03em]">
+              Enter the 6-digit code
+            </h1>
+            <p className="m-0 mt-3 text-[15px] leading-[1.45] text-text-muted">
+              Sent by SMS to{" "}
+              <strong className="font-semibold text-ink">
+                {state.pendingPhone}
+              </strong>{" "}
+              ·{" "}
+              <Link to="/login" className="font-medium underline">
+                Change
+              </Link>
+            </p>
           </div>
-        </fieldset>
 
-        {error ? (
-          <p role="alert" className="m-0 mt-4 flex items-center gap-1.5 text-[13px] font-medium text-bad-fg">
-            <Icon name="alert" size={16} />
-            {error}
-          </p>
-        ) : seconds > 0 ? (
-          <p className="m-0 mt-4 flex items-center gap-1.5 text-[14px] text-text-muted">
-            <Icon name="clock" size={18} />
-            Resend code in <strong className="font-semibold text-ink">0:{String(seconds).padStart(2, '0')}</strong>
-          </p>
-        ) : (
-          <button type="button" onClick={resend} className="mt-4 self-start text-[14px] font-semibold underline">
-            Resend code
-          </button>
-        )}
+          {/* Second div: OTP form and card */}
+          <div className="w-full md:mt-8 md:w-[40%] md:rounded-2xl md:border md:border-gray-200 md:bg-white md:p-6 md:shadow-lg lg:p-8">
+            <fieldset className="m-0 mt-8 border-0 p-0 md:mt-0">
+              <legend className="sr-only">One-time password</legend>
+              <div className="flex justify-between gap-2" onPaste={onPaste}>
+                {digits.map((d, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => {
+                      inputs.current[i] = el;
+                    }}
+                    aria-label={`Digit ${i + 1}`}
+                    inputMode="numeric"
+                    autoComplete={i === 0 ? "one-time-code" : "off"}
+                    maxLength={1}
+                    value={d}
+                    onChange={(e) => onChange(i, e.target.value)}
+                    onKeyDown={(e) => onKeyDown(i, e)}
+                    aria-invalid={!!error}
+                    className={`h-[60px] w-12 min-w-0 flex-1 rounded-input text-center text-[24px] font-semibold outline-none transition-colors ${
+                      error
+                        ? "border-2 border-danger bg-[#FFF5F5]"
+                        : "border border-white bg-surface focus:border-2 focus:border-ink md:border-2 md:border-gray-300 md:focus:border-ink md:focus:ring-2 md:focus:ring-gray-200"
+                    }`}
+                  />
+                ))}
+              </div>
+            </fieldset>
 
-        <ArrowButton type="submit" wide className="mt-9" disabled={busy}>
-          {busy ? 'Verifying…' : 'Verify & continue'}
-        </ArrowButton>
+            {error ? (
+              <p
+                role="alert"
+                className="m-0 mt-4 flex items-center gap-1.5 text-[13px] font-medium text-bad-fg"
+              >
+                <Icon name="alert" size={16} />
+                {error}
+              </p>
+            ) : seconds > 0 ? (
+              <p className="m-0 mt-4 flex items-center gap-1.5 text-[14px] text-text-muted">
+                <Icon name="clock" size={18} />
+                Resend code in{" "}
+                <strong className="font-semibold text-ink">
+                  0:{String(seconds).padStart(2, "0")}
+                </strong>
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={resend}
+                className="mt-4 self-start text-[14px] font-semibold underline"
+              >
+                Resend code
+              </button>
+            )}
 
-        <div className="mt-7 flex items-start gap-3 rounded-[20px] bg-surface/60 px-4 py-3.5">
-          <Icon name="shield" size={20} className="mt-px" />
-          <span className="text-[13px] leading-[1.45] text-text-muted">DigiRx staff will never ask for this code. Don't share it with anyone.</span>
+            <ArrowButton type="submit" wide className="mt-9" disabled={busy}>
+              {busy ? "Verifying…" : "Verify & continue"}
+            </ArrowButton>
+
+            <div className="mt-7 flex items-start gap-3 rounded-[20px] bg-surface/60 px-4 py-3.5 md:border md:border-gray-100 md:bg-gray-50">
+              <Icon name="shield" size={20} className="mt-px shrink-0" />
+              <span className="text-[13px] leading-[1.45] text-text-muted">
+                DigiRx staff will never ask for this code. Don't share it with
+                anyone.
+              </span>
+            </div>
+          </div>
+
+          {/* Third div: Empty space */}
+          <div className="hidden md:block md:w-[10%]"></div>
         </div>
       </form>
     </AuthFrame>
