@@ -1,36 +1,208 @@
-import { mockPortal } from '../data/mock';
-import type { PortalData } from '../types';
+import { mockPortal, setToday } from '../data/mock';
+import type {
+  Appointment,
+  BookingDraft,
+  Grants,
+  ID,
+  LocalDate,
+  Patient,
+  PortalData,
+  PrivacySettings,
+} from '../types';
+import type { SlotGroup } from '../lib/availability';
+import { API_MODE, ApiError, api, setAccessToken } from './http';
 
 /**
- * API boundary. Everything the screens need goes through here so the
- * mock can be swapped for the Express + MongoDB server without touching
- * components. The latency is deliberate: it lets the loading state render
- * as it will against a real network.
+ * API boundary. Everything the screens need goes through here.
+ *
+ * With `VITE_API_BASE_URL` set, calls go to the DigiRx backend's
+ * `/portal/*` API. Without it, the portal runs on the mock data, exactly as
+ * the design build did (handy for UI work).
  */
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
-const LATENCY_MS = 700;
+export { API_MODE, ApiError } from './http';
 
+const LATENCY_MS = 700;
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// --- Auth -------------------------------------------------------------------
+
 export async function requestOtp(phone: string): Promise<{ sentTo: string }> {
+  if (API_MODE) {
+    await api('/portal/auth/request-otp', { method: 'POST', json: { phone } });
+    return { sentTo: phone };
+  }
   await wait(400);
   return { sentTo: phone };
 }
 
-export async function verifyOtp(_phone: string, code: string): Promise<{ ok: boolean; attemptsLeft: number }> {
+export async function verifyOtp(
+  phone: string,
+  code: string,
+): Promise<{ ok: boolean; attemptsLeft?: number; profileComplete?: boolean; error?: string }> {
+  if (API_MODE) {
+    try {
+      const res = await api<{ accessToken: string; patient: Patient }>('/portal/auth/verify-otp', {
+        method: 'POST',
+        json: { phone, code },
+      });
+      setAccessToken(res.accessToken);
+      return { ok: true, profileComplete: !!res.patient.profileComplete };
+    } catch (e) {
+      if (e instanceof ApiError && (e.status === 401 || e.status === 400)) {
+        return { ok: false, error: e.message };
+      }
+      throw e;
+    }
+  }
   await wait(500);
   // Demo rule: any 6 digits except all-zeros verifies.
   const ok = /^\d{6}$/.test(code) && code !== '000000';
-  return { ok, attemptsLeft: ok ? 3 : 2 };
+  return { ok, attemptsLeft: ok ? 3 : 2, profileComplete: false };
 }
 
+export async function logoutSession(): Promise<void> {
+  if (!API_MODE) return;
+  try {
+    await api('/portal/auth/logout', { method: 'POST' });
+  } finally {
+    setAccessToken(null);
+  }
+}
+
+// --- Data -------------------------------------------------------------------
+
 export async function fetchPortal(): Promise<PortalData> {
-  if (API_BASE) {
-    const res = await fetch(`${API_BASE}/portal/me`, { credentials: 'include' });
-    if (!res.ok) throw new Error(`Portal request failed (${res.status})`);
-    return (await res.json()) as PortalData;
+  if (API_MODE) {
+    const data = await api<PortalData>('/portal/bootstrap');
+    if (data.today) setToday(data.today);
+    return data;
   }
   await wait(LATENCY_MS);
   return structuredClone(mockPortal);
+}
+
+/** DD / MM / YYYY (as typed in the profile form) → YYYY-MM-DD, or null. */
+export function dobToIso(dob: string): string | null {
+  const m = /^(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{4})$/.exec(dob.trim());
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  const iso = `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+  const date = new Date(`${iso}T12:00:00`);
+  return isNaN(date.getTime()) || date.getMonth() + 1 !== Number(mo) ? null : iso;
+}
+
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+const GENDER: Record<Patient['gender'], string> = { Female: 'FEMALE', Male: 'MALE', Other: 'OTHER' };
+
+export function updateProfile(p: Partial<Patient>) {
+  const dob = p.dob ? dobToIso(p.dob) : undefined;
+  return api<{ patient: Patient; linkedRecords: number }>('/portal/me', {
+    method: 'PATCH',
+    json: {
+      fullName: p.name,
+      ...(dob ? { dob } : {}),
+      gender: p.gender ? GENDER[p.gender] : undefined,
+      email: p.email ?? null,
+      bloodGroup: p.bloodGroup && BLOOD_GROUPS.includes(p.bloodGroup) ? p.bloodGroup : null,
+    },
+  });
+}
+
+// --- Booking ----------------------------------------------------------------
+
+export function fetchSlots(clinicId: ID, doctorId: ID, date: LocalDate, ignoreAppointmentId?: ID) {
+  const q = new URLSearchParams({ clinicId, doctorId, date });
+  if (ignoreAppointmentId) q.set('ignoreAppointmentId', ignoreAppointmentId);
+  return api<{ date: string; groups: SlotGroup[] }>(`/portal/slots?${q}`);
+}
+
+export function fetchNextAvailable(items: { clinicId: ID; doctorId: ID }[]) {
+  return api<{ items: { clinicId: ID; doctorId: ID; next: { date: LocalDate; times: string[] } | null }[] }>(
+    '/portal/availability/next',
+    { method: 'POST', json: { items } },
+  );
+}
+
+export function bookAppointment(draft: BookingDraft, selfId: ID) {
+  return api<Appointment>('/portal/appointments', {
+    method: 'POST',
+    json: {
+      patientId: draft.patientId === selfId ? undefined : draft.patientId,
+      clinicId: draft.clinicId,
+      doctorId: draft.doctorId,
+      date: draft.date,
+      time: draft.time,
+      reason: draft.reason || undefined,
+      shareRecords: draft.shareRecords,
+      payment: draft.payment,
+    },
+  });
+}
+
+export function cancelAppointment(id: ID, reason: string) {
+  return api<Appointment>(`/portal/appointments/${id}/cancel`, { method: 'POST', json: { reason } });
+}
+
+export function rescheduleAppointment(id: ID, date: LocalDate, time: string) {
+  return api<Appointment>(`/portal/appointments/${id}/reschedule`, { method: 'POST', json: { date, time } });
+}
+
+// --- Family -----------------------------------------------------------------
+
+export function addDependant(input: { fullName: string; dob: string; relation?: string }) {
+  return api<{ id: ID }>('/portal/family/dependants', { method: 'POST', json: input });
+}
+
+export function inviteFamily(input: { phone: string; name?: string; relation?: string }) {
+  return api<{ sent: boolean }>('/portal/family/invites', { method: 'POST', json: input });
+}
+
+export function respondInvite(connectionId: ID, accept: boolean) {
+  return api(`/portal/family/invites/${connectionId}/respond`, { method: 'POST', json: { accept } });
+}
+
+export function setFamilyGrants(connectionId: ID, patch: Partial<Grants>) {
+  return api<Grants>(`/portal/family/${connectionId}/grants`, { method: 'PUT', json: patch });
+}
+
+export function removeFamilyMember(id: ID) {
+  return api(`/portal/family/${id}`, { method: 'DELETE' });
+}
+
+// --- Privacy / notifications --------------------------------------------------
+
+export function updatePrivacy(patch: Partial<Pick<PrivacySettings, 'appLock' | 'hidePreviews'>>) {
+  return api('/portal/me/privacy', { method: 'PATCH', json: patch });
+}
+
+export function setClinicSharing(clinicId: ID, enabled: boolean) {
+  return api(`/portal/me/record-sharing/${clinicId}`, { method: 'PUT', json: { enabled } });
+}
+
+export function markNotificationsRead(ids?: ID[]) {
+  return api('/portal/notifications/read', { method: 'POST', json: ids ? { ids } : {} });
+}
+
+// --- Files ------------------------------------------------------------------
+
+type SignedUrl = { url: string; expiresInSeconds: number; mimeType: string };
+
+export const reportUrl = (id: ID) => api<SignedUrl>(`/portal/reports/${id}/download`);
+export const prescriptionPdfUrl = (id: ID) => api<SignedUrl>(`/portal/prescriptions/${id}/pdf`);
+export const invoicePdfUrl = (id: ID) => api<SignedUrl>(`/portal/bills/${id}/pdf`);
+
+// --- Payments -----------------------------------------------------------------
+
+export function createPaymentOrder(billId: ID) {
+  return api<{ orderId: string; amount: number; currency: string; keyId?: string }>(`/portal/bills/${billId}/pay/order`, {
+    method: 'POST',
+  });
+}
+
+export function verifyPayment(
+  billId: ID,
+  payload: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string },
+) {
+  return api<{ ok: boolean }>(`/portal/bills/${billId}/pay/verify`, { method: 'POST', json: payload });
 }

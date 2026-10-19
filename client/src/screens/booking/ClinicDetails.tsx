@@ -5,7 +5,7 @@ import { ArrowButton, BackButton, Button, IconButton } from '../../components/ui
 import { Icon } from '../../components/ui/Icon';
 import { ActionBar, BarSummary, Screen } from '../../components/ui/Layout';
 import { useToast } from '../../components/ui/Overlay';
-import { nextAvailable } from '../../lib/availability';
+import { nextAvailable, useAvailabilityVersion } from '../../lib/availability';
 import { dow, relativeDay, rupees } from '../../lib/format';
 import { clinicById } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';
@@ -16,6 +16,7 @@ import { useStartBooking } from './useStartBooking';
 export function ClinicDetails() {
   const { id } = useParams();
   const { data } = usePortalData();
+  useAvailabilityVersion();
   const toast = useToast();
   const startBooking = useStartBooking();
   const clinic = clinicById(data, id);
@@ -44,9 +45,11 @@ export function ClinicDetails() {
       </div>
 
       <Screen className="!pt-[18px] tablet:!px-0">
-        <Tag tone="ok" className="self-start text-[12px]">
-          Open now · until {clinic.openUntil}
-        </Tag>
+        {clinic.openUntil && (
+          <Tag tone="ok" className="self-start text-[12px]">
+            Open until {clinic.openUntil}
+          </Tag>
+        )}
         <h1 className="m-0 mt-2.5 text-[28px] font-semibold leading-[1.15] tracking-[-0.025em]">{clinic.name}</h1>
         <span className="mt-1.5 text-[14px] leading-[1.45] text-text-muted">{clinic.address}</span>
 
@@ -64,7 +67,7 @@ export function ClinicDetails() {
         <div className="mt-3 grid grid-cols-3 gap-2">
           {[
             ['Hours', clinic.hours],
-            ['Fees from', rupees(clinic.feesFrom)],
+            ['Fees from', clinic.feesFrom > 0 ? rupees(clinic.feesFrom) : 'Ask the clinic'],
             ['Your visits', yourVisits ? `${yourVisits} here` : 'None yet'],
           ].map(([k, v]) => (
             <div key={k} className="card flex flex-col gap-1 !rounded-[20px] p-3.5">

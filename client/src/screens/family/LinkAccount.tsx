@@ -5,6 +5,8 @@ import { Icon } from '../../components/ui/Icon';
 import { ActionBar, PageHeader, Screen } from '../../components/ui/Layout';
 import { NoResults } from '../../components/ui/States';
 import { usePortalData } from '../../state/portal';
+import { useToast } from '../../components/ui/Overlay';
+import { API_MODE } from '../../services/api';
 
 interface Match {
   initial: string;
@@ -18,6 +20,14 @@ interface Match {
  */
 function lookup(q: string): Match | null {
   const digits = q.replace(/\D/g, '');
+  // The server never says whether a number has an account, so the request
+  // is simply sent to the number; nothing about them is shown here.
+  if (API_MODE) {
+    const national = digits.slice(-10);
+    return national.length === 10
+      ? { initial: '?', masked: `+91 ••••• ${national.slice(-5)}`, meta: "We'll send the request to this number" }
+      : null;
+  }
   if (/^DRX/i.test(q.trim()) || digits.length >= 10) {
     return { initial: 'S', masked: 'S***** M****', meta: 'Female · born 1964 · ID DRX-58-••-21' };
   }
@@ -27,6 +37,7 @@ function lookup(q: string): Match | null {
 export function LinkAccount() {
   const { actions } = usePortalData();
   const navigate = useNavigate();
+  const toast = useToast();
   const [q, setQ] = useState('');
   const [result, setResult] = useState<Match | null | undefined>(undefined);
 
@@ -35,8 +46,24 @@ export function LinkAccount() {
     setResult(lookup(q));
   };
 
-  const send = () => {
+  const send = async () => {
     if (!result) return;
+    if (API_MODE) {
+      const res = await actions.inviteFamily({ phone: q.replace(/\D/g, '').slice(-10) });
+      if (!res.ok) {
+        toast({ message: res.error, tone: 'info' });
+        return;
+      }
+      navigate('/done', {
+        replace: true,
+        state: {
+          title: 'Link request sent',
+          body: "If they use DigiRx they'll see your request. Their records stay private unless they choose to share.",
+          primary: { label: 'Back to family', to: '/family' },
+        },
+      });
+      return;
+    }
     actions.addMember({
       id: `m-${Date.now()}`,
       name: result.masked,

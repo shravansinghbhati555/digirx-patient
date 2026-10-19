@@ -6,7 +6,7 @@ import { ArrowButton, IconButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { ActionBar, PageHeader, Screen } from '../../components/ui/Layout';
 import { useToast } from '../../components/ui/Overlay';
-import { nextAvailable } from '../../lib/availability';
+import { nextAvailable, useAvailabilityVersion } from '../../lib/availability';
 import { relativeDay, rupees } from '../../lib/format';
 import { clinicById, doctorById } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';
@@ -17,6 +17,7 @@ export function DoctorProfile() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const { data } = usePortalData();
+  useAvailabilityVersion();
   const toast = useToast();
   const startBooking = useStartBooking();
   const [saved, setSaved] = useState(false);
@@ -72,7 +73,7 @@ export function DoctorProfile() {
 
       <div className="mt-[22px] grid grid-cols-3 gap-2">
         {[
-          ['Experience', String(doctor.years), 'Years'],
+          ['Experience', doctor.years > 0 ? String(doctor.years) : '—', 'Years'],
           ['Fee', rupees(doctor.fee), 'In clinic'],
           ['Languages', String(doctor.languages.length), doctor.languages.join(' · ')],
         ].map(([k, v, u]) => (

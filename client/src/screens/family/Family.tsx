@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Flower } from '../../components/ui/Art';
 import { Avatar, Note, Tag } from '../../components/ui/Bits';
-import { IconButton } from '../../components/ui/Button';
+import { Button, IconButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { Screen } from '../../components/ui/Layout';
 import { ConfirmDialog, useToast } from '../../components/ui/Overlay';
 import { usePortalData } from '../../state/portal';
 import type { FamilyMember, Grants, PortalData } from '../../types';
 
-const PARENT = ['mother', 'father'];
+const PARENT = ['mother', 'father', 'parent'];
 const SPOUSE = ['husband', 'wife', 'spouse', 'partner'];
-const CHILD = ['son', 'daughter'];
+const CHILD = ['son', 'daughter', 'child'];
 
 /** Positions people around "You" in a 350×320 box, mirroring the design's tree. */
 function FamilyTree({ data }: { data: PortalData }) {
@@ -84,6 +84,9 @@ const grantLabels: [keyof Grants, string][] = [
 ];
 
 function MemberTags({ m }: { m: FamilyMember }) {
+  if (m.shared) {
+    return <Tag tone="neutral">{m.note}</Tag>;
+  }
   if (m.kind === 'dependant') {
     return (
       <>
@@ -142,7 +145,38 @@ export function Family() {
 
         <div className="mt-4 flex flex-col gap-2.5 tablet:mt-3.5">
           {data.family.map((m) =>
-            m.kind === 'pending' ? (
+            m.kind === 'pending' && m.incoming ? (
+              <div key={m.id} className="card flex flex-col gap-3 !bg-[rgba(255,241,214,.85)] p-3.5">
+                <span className="flex items-center gap-3">
+                  <Avatar initials={m.initials} color="#FDFCFB" size={46} shape="soft" ring="dashed" textSize={15} />
+                  <span className="flex flex-1 flex-col">
+                    <span className="text-[16px] font-semibold">{m.name}</span>
+                    <span className="text-[12px] text-text-caption">{m.note}. Nothing is shared until you choose.</span>
+                  </span>
+                </span>
+                <span className="flex gap-2">
+                  <Button
+                    size="xs"
+                    onClick={async () => {
+                      const res = await actions.respondInvite(m.connectionId ?? m.id, true);
+                      toast(res.ok ? { message: `You're connected with ${m.firstName}` } : { message: res.error, tone: 'info' });
+                    }}
+                  >
+                    Accept
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="secondary"
+                    onClick={async () => {
+                      const res = await actions.respondInvite(m.connectionId ?? m.id, false);
+                      if (!res.ok) toast({ message: res.error, tone: 'info' });
+                    }}
+                  >
+                    Decline
+                  </Button>
+                </span>
+              </div>
+            ) : m.kind === 'pending' ? (
               <button key={m.id} type="button" onClick={() => setCancelId(m.id)} className="card flex flex-col gap-2.5 !bg-[rgba(255,241,214,.85)] p-3.5 text-left">
                 <span className="flex items-center gap-3">
                   <Avatar initials={m.initials} color="#FDFCFB" size={46} shape="soft" ring="dashed" textSize={15} />
@@ -181,8 +215,9 @@ export function Family() {
         onClose={() => setCancelId(null)}
         onConfirm={() => {
           if (pending) {
-            actions.removeMember(pending.id);
-            toast({ message: `Invite to ${pending.firstName} cancelled`, tone: 'info' });
+            void actions.removeMember(pending.id).then((res) =>
+              toast(res.ok ? { message: `Invite to ${pending.firstName} cancelled`, tone: 'info' } : { message: res.error, tone: 'info' }),
+            );
           }
           setCancelId(null);
         }}

@@ -21,6 +21,10 @@ export interface Patient {
   email?: string;
   patientCode: string;
   healthTags: string[];
+  /** API only: profile has a name and date of birth. */
+  profileComplete?: boolean;
+  /** API only: date of birth can no longer be changed (records are linked). */
+  dobLocked?: boolean;
 }
 
 export interface Clinic {
@@ -42,6 +46,9 @@ export interface Clinic {
   gradient: string;
   services: string[];
   tags: string[];
+  /** API only: the clinic takes online bookings. */
+  bookingEnabled?: boolean;
+  cancellationLeadTimeHours?: number;
 }
 
 export interface DoctorClinic {
@@ -69,6 +76,8 @@ export interface Doctor {
   availabilityNote: string;
   seenBefore: boolean;
   pronoun: 'her' | 'him' | 'them';
+  /** API only: can be booked online (false for doctors known only from records). */
+  bookable?: boolean;
 }
 
 export interface Speciality {
@@ -97,6 +106,10 @@ export interface Appointment {
   outcomeNote?: string;
   visitId?: ID;
   reportId?: ID;
+  invoiceId?: ID;
+  /** API only: exact start/end instants (ISO, UTC). */
+  startAt?: string;
+  endAt?: string;
 }
 
 export type RecordType = 'visit' | 'lab' | 'rx' | 'vax';
@@ -156,6 +169,7 @@ export interface Report {
   pages: number;
   results?: LabResult[];
   alert?: string;
+  mimeType?: string;
 }
 
 export interface Medicine {
@@ -199,6 +213,9 @@ export interface Invoice {
   reference?: string;
   gstin?: string;
   items: { label: string; amount: number; muted?: boolean }[];
+  /** API only: what is left to pay. */
+  outstanding?: number;
+  billNo?: string;
 }
 
 export interface Grants {
@@ -212,12 +229,18 @@ export type FamilyKind = 'dependant' | 'linked' | 'pending';
 
 export interface FamilyMember {
   id: ID;
+  /** API only: id of the family connection (linked/pending members). */
+  connectionId?: ID;
+  /** API only: an invite someone sent you, waiting for your answer. */
+  incoming?: boolean;
   name: string;
   firstName: string;
   initials: string;
   color: string;
   relation: string;
   kind: FamilyKind;
+  /** Already on a connected member's tree. Shown in yours; they control their own access. */
+  shared?: boolean;
   note: string;
   age?: number;
   linkedSince?: string;
@@ -275,4 +298,6 @@ export interface PortalData {
   family: FamilyMember[];
   notifications: PortalNotification[];
   privacy: PrivacySettings;
+  /** API only: clinic-local today (YYYY-MM-DD). */
+  today?: LocalDate;
 }

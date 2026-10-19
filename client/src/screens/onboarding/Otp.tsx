@@ -4,6 +4,7 @@ import { Face, faces } from '../../components/ui/Art';
 import { ArrowButton, BackButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { requestOtp, verifyOtp } from '../../services/api';
+import { errorMessage } from '../../services/http';
 import { usePortal } from '../../state/portal';
 import { AuthFrame } from './AuthFrame';
 
@@ -63,19 +64,35 @@ export function Otp() {
       return;
     }
     setBusy(true);
-    const res = await verifyOtp(state.pendingPhone ?? '', code);
-    setBusy(false);
-    if (!res.ok) {
-      setError(`That code didn't match. ${res.attemptsLeft} tries left.`);
+    let res: Awaited<ReturnType<typeof verifyOtp>>;
+    try {
+      res = await verifyOtp(state.pendingPhone ?? '', code);
+    } catch (err) {
+      setBusy(false);
+      setError(errorMessage(err));
       return;
     }
-    actions.signIn();
-    navigate('/setup', { replace: true });
+    setBusy(false);
+    if (!res.ok) {
+      setError(
+        res.attemptsLeft !== undefined
+          ? `That code didn't match. ${res.attemptsLeft} tries left.`
+          : (res.error ?? "That code didn't match or has expired."),
+      );
+      return;
+    }
+    actions.signIn(!!res.profileComplete);
+    navigate(res.profileComplete ? '/' : '/setup', { replace: true });
   };
 
   const resend = async () => {
-    await requestOtp(state.pendingPhone ?? '');
-    setSeconds(RESEND_SECONDS);
+    try {
+      await requestOtp(state.pendingPhone ?? '');
+      setError('');
+      setSeconds(RESEND_SECONDS);
+    } catch (err) {
+      setError(errorMessage(err));
+    }
   };
 
   return (

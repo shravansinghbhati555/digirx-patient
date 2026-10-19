@@ -4,15 +4,17 @@ import { SectionHeader } from '../../components/ui/Bits';
 import { BackButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { Screen } from '../../components/ui/Layout';
-import { nextAvailable } from '../../lib/availability';
+import { nextAvailable, useAvailabilityVersion } from '../../lib/availability';
 import { relativeDay } from '../../lib/format';
 import { usePortalData } from '../../state/portal';
 
 export function Discover() {
   const { data } = usePortalData();
+  useAvailabilityVersion();
   const visited = new Set(data.records.map((r) => r.clinicId));
   const clinics = [...data.clinics].sort((a, b) => a.distanceKm - b.distanceKm);
   const today = data.doctors
+    .filter((d) => d.bookable !== false)
     .map((d) => ({ d, next: nextAvailable(d, d.clinics[0].clinicId, data.appointments) }))
     .filter((x) => x.next && relativeDay(x.next.date) === 'Today');
 

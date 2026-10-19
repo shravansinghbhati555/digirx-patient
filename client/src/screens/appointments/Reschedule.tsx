@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react';
+import { useToast } from '../../components/ui/Overlay';
+import { API_MODE } from '../../services/api';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { SlotGrid } from '../../components/domain';
 import { ArrowButton, IconButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { ActionBar, PageHeader, Screen } from '../../components/ui/Layout';
 import { TODAY } from '../../data/mock';
-import { openSlots, slotsFor, worksOn } from '../../lib/availability';
+import { openSlots, slotsFor, useSlots, worksOn } from '../../lib/availability';
 import { addDays, dayNum, dow, minutesToTime, monthYear, relativeDay, shortDate, timeToMinutes, toDate } from '../../lib/format';
 import { doctorById } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';
@@ -17,6 +19,8 @@ export function Reschedule() {
   const { id } = useParams();
   const { data, actions } = usePortalData();
   const navigate = useNavigate();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
   const appt = data.appointments.find((a) => a.id === id);
   const doctor = doctorById(data, appt?.doctorId);
   const [date, setDate] = useState(appt?.date ?? TODAY);
@@ -27,22 +31,31 @@ export function Reschedule() {
   const weekStart = addDays(TODAY, -toDate(TODAY).getDay() + offset * 7);
   const cells = useMemo(() => Array.from({ length: 14 }, (_, i) => addDays(weekStart, i)), [weekStart]);
 
-  const groups = useMemo(
-    () => (appt && doctor ? slotsFor(doctor, appt.clinicId, date, data.appointments, appt.id) : []),
-    [appt, doctor, date, data.appointments],
-  );
+  const slots = useSlots(doctor, appt?.clinicId, date, appt?.id, data.appointments);
+  const groups = slots.groups;
 
   if (!appt) return <NotFound />;
   if (!doctor || (appt.status !== 'confirmed' && appt.status !== 'pending')) return <Navigate to={`/appointments/${appt.id}`} replace />;
 
+  // With the API, open days come from the doctor's weekly schedule; the
+  // slots for a picked day are then loaded from the clinic.
   const hasSlots = (d: string) =>
-    d >= TODAY && worksOn(doctor, appt.clinicId, d) && openSlots(slotsFor(doctor, appt.clinicId, d, data.appointments, appt.id)).length > 0;
+    d >= TODAY &&
+    worksOn(doctor, appt.clinicId, d) &&
+    (API_MODE || openSlots(slotsFor(doctor, appt.clinicId, d, data.appointments, appt.id)).length > 0);
 
   const changed = !!time && !(date === appt.date && time === appt.time);
   const evening = groups.find((g) => g.slots.some((s) => s.time === time))?.name;
 
-  const confirm = () => {
-    actions.reschedule(appt.id, date, time);
+  const confirm = async () => {
+    setBusy(true);
+    const res = await actions.reschedule(appt.id, date, time);
+    setBusy(false);
+    if (!res.ok) {
+      toast({ message: res.error, tone: 'info' });
+      setTime('');
+      return;
+    }
     const remind = minutesToTime(Math.max(timeToMinutes(time) - 60, 0));
     navigate('/done', {
       replace: true,
@@ -132,14 +145,16 @@ export function Reschedule() {
         {shortDate(date)}
         {evening ? ` · ${evening}` : ''}
       </h2>
-      {groups.length ? (
+      {slots.loading ? (
+        <p className="m-0 mt-3 text-[14px] text-text-muted">Checking the doctor's diary…</p>
+      ) : groups.length ? (
         <SlotGrid groups={groups} value={time} onChange={setTime} current={date === appt.date ? appt.time : undefined} />
       ) : (
-        <p className="m-0 mt-3 text-[14px] text-text-muted">No slots on this day.</p>
+        <p className="m-0 mt-3 text-[14px] text-text-muted">{slots.error || 'No slots on this day.'}</p>
       )}
 
       <ActionBar>
-        <ArrowButton wide glyph="check" disabled={!changed} onClick={confirm}>
+        <ArrowButton wide glyph="check" disabled={!changed || busy} onClick={confirm}>
           Confirm new time
         </ArrowButton>
       </ActionBar>

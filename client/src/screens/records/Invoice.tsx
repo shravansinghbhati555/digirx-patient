@@ -7,6 +7,8 @@ import { Sheet, useToast } from '../../components/ui/Overlay';
 import { dayMonth, fullDate, rupees } from '../../lib/format';
 import { clinicById, doctorById, person } from '../../lib/selectors';
 import { downloadText, shareOrCopy } from '../../lib/share';
+import { API_MODE, invoicePdfUrl } from '../../services/api';
+import { openSignedFile } from '../../lib/files';
 import { usePortalData } from '../../state/portal';
 import type { Invoice as InvoiceT } from '../../types';
 import { NotFound } from '../system/NotFound';
@@ -22,6 +24,7 @@ export function Invoice() {
   const toast = useToast();
   const [payOpen, setPayOpen] = useState(false);
   const [method, setMethod] = useState<NonNullable<InvoiceT['method']>>('UPI');
+  const [paying, setPaying] = useState(false);
   const inv = data.invoices.find((i) => i.id === id);
   if (!inv) return <NotFound />;
   const clinic = clinicById(data, inv.clinicId);
@@ -47,11 +50,18 @@ export function Invoice() {
     inv.gstin ? `GSTIN ${inv.gstin}` : '',
   ].join('\n');
 
-  const pay = () => {
-    actions.payInvoice(inv.id, method);
+  const due = inv.outstanding ?? inv.amount;
+  const pay = async () => {
+    setPaying(true);
+    const res = await actions.payInvoice(inv.id, method);
+    setPaying(false);
     setPayOpen(false);
-    toast({ message: `Paid ${rupees(inv.amount)} to ${clinic?.short}` });
+    toast(res.ok ? { message: `Paid ${rupees(due)} to ${clinic?.short}` } : { message: res.error, tone: 'info' });
   };
+  const downloadPdf = () =>
+    API_MODE
+      ? openSignedFile(() => invoicePdfUrl(inv.id), (message) => toast({ message, tone: 'info' }))
+      : downloadText(`${inv.id}.txt`, text);
 
   return (
     <Screen>
@@ -110,10 +120,10 @@ export function Invoice() {
       <ActionBar>
         {inv.status === 'due' ? (
           <ArrowButton wide onClick={() => setPayOpen(true)}>
-            Pay {rupees(inv.amount)}
+            Pay {rupees(due)}
           </ArrowButton>
         ) : (
-          <Button block icon="download" onClick={() => downloadText(`${inv.id}.txt`, text)}>
+          <Button block icon="download" onClick={downloadPdf}>
             Download invoice
           </Button>
         )}
@@ -122,10 +132,10 @@ export function Invoice() {
       <Sheet
         open={payOpen}
         onClose={() => setPayOpen(false)}
-        title={`Pay ${rupees(inv.amount)}`}
+        title={`Pay ${rupees(due)}`}
         footer={
-          <ArrowButton wide glyph="check" onClick={pay}>
-            Pay with {method}
+          <ArrowButton wide glyph="check" onClick={pay} disabled={paying}>
+            {API_MODE ? 'Continue to secure payment' : `Pay with ${method}`}
           </ArrowButton>
         }
       >

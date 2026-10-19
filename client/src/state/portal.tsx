@@ -10,7 +10,11 @@ import {
   type Dispatch,
   type ReactNode,
 } from 'react';
-import { fetchPortal } from '../services/api';
+import * as portalApi from '../services/api';
+import { API_MODE, fetchPortal, logoutSession } from '../services/api';
+import { errorMessage, setSignedOutHandler } from '../services/http';
+import { invalidateAvailability } from '../lib/availability';
+import { payWithRazorpay } from '../lib/pay';
 import type {
   Appointment,
   BookingDraft,
@@ -39,9 +43,14 @@ interface State {
   draft: BookingDraft | null;
 }
 
+/** Outcome of an action that talks to the server. */
+export type Result = { ok: true } | { ok: false; error: string };
+const OK: Result = { ok: true };
+const fail = (e: unknown): Result => ({ ok: false, error: errorMessage(e) });
+
 type Action =
   | { type: 'startLogin'; phone: string }
-  | { type: 'signIn' }
+  | { type: 'signIn'; profileDone?: boolean }
   | { type: 'completeProfile'; patch: Partial<PortalData['patient']> }
   | { type: 'logout' }
   | { type: 'loading' }
@@ -51,6 +60,7 @@ type Action =
   | { type: 'draft'; draft: BookingDraft | null }
   | { type: 'patchDraft'; patch: Partial<BookingDraft> }
   | { type: 'addAppointment'; appt: Appointment }
+  | { type: 'replaceAppointment'; appt: Appointment }
   | { type: 'cancel'; id: ID; reason: string }
   | { type: 'reschedule'; id: ID; date: LocalDate; time: string }
   | { type: 'grant'; memberId: ID; key: keyof Grants; value: boolean }
@@ -70,7 +80,8 @@ function load(): State {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initial;
     const saved = JSON.parse(raw) as Partial<State>;
-    const data = saved.data ?? null;
+    // With the real API, records are always fetched fresh, never kept on disk.
+    const data = API_MODE ? null : (saved.data ?? null);
     return {
       ...initial,
       session: saved.session ?? null,
@@ -97,7 +108,7 @@ function reducer(s: State, a: Action): State {
     case 'startLogin':
       return { ...s, pendingPhone: a.phone };
     case 'signIn':
-      return { ...s, session: { phone: s.pendingPhone ?? '', profileDone: false }, pendingPhone: null };
+      return { ...s, session: { phone: s.pendingPhone ?? '', profileDone: !!a.profileDone }, pendingPhone: null, status: 'idle', data: null };
     case 'completeProfile':
       return {
         ...withData(s, (d) => ({ ...d, patient: { ...d.patient, ...a.patch } })),
@@ -108,7 +119,12 @@ function reducer(s: State, a: Action): State {
     case 'loading':
       return { ...s, status: 'loading' };
     case 'loaded':
-      return { ...s, status: 'ready', data: a.data };
+      return {
+        ...s,
+        status: 'ready',
+        data: a.data,
+        session: s.session && a.data.patient.profileComplete ? { ...s.session, profileDone: true } : s.session,
+      };
     case 'failed':
       return { ...s, status: 'error' };
     case 'mood':
@@ -118,7 +134,9 @@ function reducer(s: State, a: Action): State {
     case 'patchDraft':
       return s.draft ? { ...s, draft: { ...s.draft, ...a.patch } } : s;
     case 'addAppointment':
-      return withData(s, (d) => ({ ...d, appointments: [a.appt, ...d.appointments] }));
+      return withData(s, (d) => ({ ...d, appointments: [a.appt, ...d.appointments.filter((x) => x.id !== a.appt.id)] }));
+    case 'replaceAppointment':
+      return withData(s, (d) => mapAppt(d, a.appt.id, () => a.appt));
     case 'cancel':
       return withData(s, (d) =>
         mapAppt(d, a.id, (x) => ({
@@ -167,23 +185,64 @@ function reducer(s: State, a: Action): State {
   }
 }
 
-function makeActions(dispatch: Dispatch<Action>, get: () => State) {
+function makeActions(dispatch: Dispatch<Action>, get: () => State, reload: () => Promise<void>) {
+  /** Run a server call; refresh the portal data in the background after it. */
+  const run = async (fn: () => Promise<unknown>, after?: () => void, refresh = true): Promise<Result> => {
+    try {
+      await fn();
+      after?.();
+      if (refresh) void reload();
+      return OK;
+    } catch (e) {
+      return fail(e);
+    }
+  };
+
   return {
     startLogin: (phone: string) => dispatch({ type: 'startLogin', phone }),
-    signIn: () => dispatch({ type: 'signIn' }),
-    completeProfile: (patch: Partial<PortalData['patient']> = {}) => dispatch({ type: 'completeProfile', patch }),
-    logout: () => dispatch({ type: 'logout' }),
+    signIn: (profileDone = false) => dispatch({ type: 'signIn', profileDone }),
+    /** Saves the profile (and, with the API, links matching clinic records). */
+    completeProfile: async (patch: Partial<PortalData['patient']> = {}): Promise<Result & { linked?: number }> => {
+      if (!API_MODE || Object.keys(patch).length === 0) {
+        dispatch({ type: 'completeProfile', patch });
+        return OK;
+      }
+      try {
+        const res = await portalApi.updateProfile(patch);
+        dispatch({ type: 'completeProfile', patch: res.patient });
+        await reload();
+        return { ok: true, linked: res.linkedRecords };
+      } catch (e) {
+        return fail(e);
+      }
+    },
+    logout: () => {
+      void logoutSession().catch(() => undefined);
+      dispatch({ type: 'logout' });
+    },
     setMood: (mood: Mood) => dispatch({ type: 'mood', mood }),
     startBooking: (draft: BookingDraft) => dispatch({ type: 'draft', draft }),
     patchDraft: (patch: Partial<BookingDraft>) => dispatch({ type: 'patchDraft', patch }),
     clearDraft: () => dispatch({ type: 'draft', draft: null }),
-    /** Creates the appointment from the current draft and returns it. */
-    confirmBooking: (): Appointment | null => {
+    /** Creates the appointment from the current draft. */
+    confirmBooking: async (): Promise<{ appt: Appointment | null; error?: string }> => {
       const { draft, data } = get();
-      if (!draft || !data) return null;
+      if (!draft || !data) return { appt: null };
       const doctor = data.doctors.find((d) => d.id === draft.doctorId);
       const clinic = data.clinics.find((c) => c.id === draft.clinicId);
-      if (!doctor || !clinic) return null;
+      if (!doctor || !clinic) return { appt: null };
+      if (API_MODE) {
+        try {
+          const appt = await portalApi.bookAppointment(draft, data.patient.id);
+          invalidateAvailability();
+          dispatch({ type: 'addAppointment', appt });
+          void reload();
+          return { appt };
+        } catch (e) {
+          invalidateAvailability();
+          return { appt: null, error: errorMessage(e) };
+        }
+      }
       const n = String(Math.floor(10000 + Math.random() * 89999));
       const appt: Appointment = {
         id: `a-${n}`,
@@ -203,17 +262,95 @@ function makeActions(dispatch: Dispatch<Action>, get: () => State) {
       // The draft is cleared by the confirmation screen once it mounts; clearing
       // it here would trip the booking screens' "no draft" redirect first.
       dispatch({ type: 'addAppointment', appt });
-      return appt;
+      return { appt };
     },
-    cancelAppointment: (id: ID, reason: string) => dispatch({ type: 'cancel', id, reason }),
-    reschedule: (id: ID, date: LocalDate, time: string) => dispatch({ type: 'reschedule', id, date, time }),
-    setGrant: (memberId: ID, key: keyof Grants, value: boolean) => dispatch({ type: 'grant', memberId, key, value }),
-    removeMember: (id: ID) => dispatch({ type: 'removeMember', id }),
+    cancelAppointment: async (id: ID, reason: string): Promise<Result> => {
+      if (!API_MODE) {
+        dispatch({ type: 'cancel', id, reason });
+        return OK;
+      }
+      try {
+        const appt = await portalApi.cancelAppointment(id, reason);
+        invalidateAvailability();
+        dispatch({ type: 'replaceAppointment', appt });
+        void reload();
+        return OK;
+      } catch (e) {
+        return fail(e);
+      }
+    },
+    reschedule: async (id: ID, date: LocalDate, time: string): Promise<Result> => {
+      if (!API_MODE) {
+        dispatch({ type: 'reschedule', id, date, time });
+        return OK;
+      }
+      try {
+        const appt = await portalApi.rescheduleAppointment(id, date, time);
+        invalidateAvailability();
+        dispatch({ type: 'replaceAppointment', appt });
+        return OK;
+      } catch (e) {
+        invalidateAvailability();
+        return fail(e);
+      }
+    },
+    setGrant: async (memberId: ID, key: keyof Grants, value: boolean): Promise<Result> => {
+      const member = get().data?.family.find((m) => m.id === memberId);
+      if (!API_MODE || !member?.connectionId) {
+        dispatch({ type: 'grant', memberId, key, value });
+        return OK;
+      }
+      dispatch({ type: 'grant', memberId, key, value });
+      const res = await run(() => portalApi.setFamilyGrants(member.connectionId!, { [key]: value }), undefined, false);
+      if (!res.ok) dispatch({ type: 'grant', memberId, key, value: !value });
+      return res;
+    },
+    removeMember: async (id: ID): Promise<Result> => {
+      if (!API_MODE) {
+        dispatch({ type: 'removeMember', id });
+        return OK;
+      }
+      const member = get().data?.family.find((m) => m.id === id);
+      const target = member?.kind === 'dependant' ? id : (member?.connectionId ?? id);
+      return run(() => portalApi.removeFamilyMember(target), () => dispatch({ type: 'removeMember', id }));
+    },
     addMember: (member: FamilyMember) => dispatch({ type: 'addMember', member }),
-    setPrivacy: (patch: Partial<PrivacySettings>) => dispatch({ type: 'privacy', patch }),
-    setClinicSharing: (clinicId: ID, value: boolean) => dispatch({ type: 'clinicShare', clinicId, value }),
-    markRead: (ids?: ID[]) => dispatch({ type: 'readNotifications', ids }),
-    payInvoice: (id: ID, method: Invoice['method'] = 'UPI') => dispatch({ type: 'pay', id, method }),
+    addDependant: (input: { fullName: string; dob: string; relation?: string }) =>
+      run(() => portalApi.addDependant(input)),
+    inviteFamily: (input: { phone: string; name?: string; relation?: string }) =>
+      run(() => portalApi.inviteFamily(input)),
+    respondInvite: (connectionId: ID, accept: boolean) => run(() => portalApi.respondInvite(connectionId, accept)),
+    setPrivacy: async (patch: Partial<PrivacySettings>): Promise<Result> => {
+      dispatch({ type: 'privacy', patch });
+      if (!API_MODE) return OK;
+      const { appLock, hidePreviews } = patch;
+      return run(() => portalApi.updatePrivacy({ appLock, hidePreviews }), undefined, false);
+    },
+    setClinicSharing: async (clinicId: ID, value: boolean): Promise<Result> => {
+      dispatch({ type: 'clinicShare', clinicId, value });
+      if (!API_MODE) return OK;
+      const res = await run(() => portalApi.setClinicSharing(clinicId, value));
+      if (!res.ok) dispatch({ type: 'clinicShare', clinicId, value: !value });
+      return res;
+    },
+    markRead: (ids?: ID[]) => {
+      dispatch({ type: 'readNotifications', ids });
+      if (API_MODE) void portalApi.markNotificationsRead(ids).catch(() => undefined);
+    },
+    payInvoice: async (id: ID, method: Invoice['method'] = 'UPI'): Promise<Result> => {
+      if (!API_MODE) {
+        dispatch({ type: 'pay', id, method });
+        return OK;
+      }
+      const data = get().data;
+      try {
+        await payWithRazorpay(id, { name: data?.patient.name, phone: data?.patient.phone, email: data?.patient.email });
+        await reload();
+        return OK;
+      } catch (e) {
+        return fail(e);
+      }
+    },
   };
 }
 
@@ -235,16 +372,28 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     stateRef.current = state;
   }, [state]);
-  const actions = useMemo(() => makeActions(dispatch, () => stateRef.current), []);
 
-  const reload = useCallback(() => {
-    dispatch({ type: 'loading' });
-    fetchPortal()
-      .then((data) => dispatch({ type: 'loaded', data }))
-      .catch(() => dispatch({ type: 'failed' }));
+  const fetchData = useCallback(async (background: boolean) => {
+    if (!background) dispatch({ type: 'loading' });
+    try {
+      dispatch({ type: 'loaded', data: await fetchPortal() });
+    } catch {
+      if (!background) dispatch({ type: 'failed' });
+    }
+  }, []);
+  const reload = useCallback(() => void fetchData(false), [fetchData]);
+  const actions = useMemo(
+    () => makeActions(dispatch, () => stateRef.current, () => fetchData(stateRef.current.data !== null)),
+    [fetchData],
+  );
+
+  // An expired/revoked session (refresh failed) signs the person out.
+  useEffect(() => {
+    setSignedOutHandler(() => dispatch({ type: 'logout' }));
+    return () => setSignedOutHandler(() => undefined);
   }, []);
 
-  // Signed in without data (fresh login): load it.
+  // Signed in without data (fresh login or reload): load it.
   useEffect(() => {
     if (state.session && state.status === 'idle') reload();
   }, [state.session, state.status, reload]);
@@ -252,7 +401,10 @@ export function PortalProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const { session, data, mood, draft } = state;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ session, data, mood, draft }));
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(API_MODE ? { session, mood, draft } : { session, data, mood, draft }),
+      );
     } catch {
       /* storage unavailable (private mode) — state still works in memory */
     }

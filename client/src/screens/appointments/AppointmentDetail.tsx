@@ -19,6 +19,8 @@ import { NotFound } from '../system/NotFound';
 const NOW_MIN = 14 * 60;
 
 function minutesUntil(a: Appointment) {
+  // With the API the exact start instant is known; the mock uses the demo clock.
+  if (a.startAt) return Math.round((Date.parse(a.startAt) - Date.now()) / 60000);
   return daysFromToday(a.date) * 1440 + timeToMinutes(a.time) - NOW_MIN;
 }
 
@@ -29,8 +31,8 @@ function untilLabel(a: Appointment) {
   return `in ${Math.round(m / 1440)} days`;
 }
 
-function freeCancelUntil(a: Appointment) {
-  const cutoff = timeToMinutes(a.time) - 120;
+function freeCancelUntil(a: Appointment, leadHours: number) {
+  const cutoff = timeToMinutes(a.time) - leadHours * 60;
   const days = daysFromToday(a.date);
   const when = days === 0 ? 'today' : days === 1 ? 'tomorrow' : `on ${shortDate(a.date)}`;
   return `${minutesToTime(Math.max(cutoff, 0))} ${when}`;
@@ -53,12 +55,18 @@ export function AppointmentDetail() {
   const who = person(data, appt.patientId);
   const tag = statusTag(appt);
   const active = appt.status === 'confirmed' || appt.status === 'pending';
-  const free = minutesUntil(appt) > 120;
+  const lead = clinic?.cancellationLeadTimeHours ?? 2;
+  const leadLabel = `${lead} hour${lead === 1 ? '' : 's'}`;
+  const free = minutesUntil(appt) > lead * 60;
   const mapsUrl = clinic ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${clinic.name}, ${clinic.address}`)}` : '#';
 
-  const doCancel = () => {
-    actions.cancelAppointment(appt.id, REASONS[reason]);
+  const doCancel = async () => {
+    const res = await actions.cancelAppointment(appt.id, REASONS[reason]);
     setCancelOpen(false);
+    if (!res.ok) {
+      toast({ message: res.error, tone: 'info' });
+      return;
+    }
     navigate('/done', {
       replace: true,
       state: {
@@ -162,7 +170,7 @@ export function AppointmentDetail() {
 
           <span className="mt-[18px] flex items-start gap-2 text-[13px] leading-[1.45] text-text-muted">
             <Icon name="clock" size={18} />
-            {free ? `You can reschedule or cancel free until ${freeCancelUntil(appt)}.` : 'Within 2 hours of your visit, the clinic’s cancellation policy applies.'}
+            {free ? `You can reschedule or cancel free until ${freeCancelUntil(appt, lead)}.` : `Within ${leadLabel} of your visit, please call the clinic to change it.`}
           </span>
 
           <button
@@ -256,7 +264,7 @@ export function AppointmentDetail() {
 
         <div className={`mb-3 mt-3.5 flex items-center gap-2 rounded-[16px] px-3.5 py-3 text-[13px] font-medium ${free ? 'bg-ok-bg text-ok-fg' : 'bg-warn-bg text-warn-fg'}`}>
           <Icon name={free ? 'check' : 'alert'} size={18} />
-          {free ? 'No charge — more than 2 hours before your visit.' : 'Less than 2 hours to go — the clinic may charge a fee.'}
+          {free ? `No charge — more than ${leadLabel} before your visit.` : `Less than ${leadLabel} to go — please call the clinic.`}
         </div>
       </Sheet>
     </Screen>

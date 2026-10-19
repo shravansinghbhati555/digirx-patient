@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Toggle } from '../../components/ui/Bits';
 import { ArrowButton, BackButton } from '../../components/ui/Button';
 import { ActionBar, BarSummary, Screen } from '../../components/ui/Layout';
+import { useToast } from '../../components/ui/Overlay';
 import { dow, fullDate, rupees } from '../../lib/format';
 import { clinicById, doctorById, patientLabel } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';
@@ -9,6 +11,8 @@ import { usePortalData } from '../../state/portal';
 export function ReviewBooking() {
   const { data, state, actions } = usePortalData();
   const navigate = useNavigate();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
   const draft = state.draft;
   const doctor = doctorById(data, draft?.doctorId);
   if (!draft || !doctor) return <Navigate to="/discover" replace />;
@@ -20,9 +24,24 @@ export function ReviewBooking() {
     .filter(Boolean);
   const lastName = doctor.name.split(' ').slice(-1)[0];
 
-  const confirm = () => {
-    const appt = actions.confirmBooking();
-    if (appt) navigate(`/book/confirmed/${appt.id}`, { replace: true });
+  const payNow = draft.payment === 'online' && doctor.fee > 0;
+
+  const confirm = async () => {
+    setBusy(true);
+    const { appt, error } = await actions.confirmBooking();
+    if (!appt) {
+      setBusy(false);
+      if (error) toast({ message: error, tone: 'info' });
+      return;
+    }
+    // Online: the booking issued the consultation bill — pay it now. If the
+    // payment window is closed the booking stands and can be paid later.
+    if (payNow && appt.invoiceId) {
+      const paid = await actions.payInvoice(appt.invoiceId);
+      if (!paid.ok) toast({ message: `${paid.error} You can pay from Billing.`, tone: 'info' });
+    }
+    setBusy(false);
+    navigate(`/book/confirmed/${appt.id}`, { replace: true });
   };
 
   return (
@@ -112,8 +131,8 @@ export function ReviewBooking() {
 
       <ActionBar>
         <BarSummary label="Consultation fee" value={rupees(doctor.fee)} large />
-        <ArrowButton glyph="check" onClick={confirm}>
-          {draft.payment === 'online' ? `Pay ${rupees(doctor.fee)}` : 'Confirm booking'}
+        <ArrowButton glyph="check" onClick={confirm} disabled={busy}>
+          {payNow ? `Pay ${rupees(doctor.fee)}` : 'Confirm booking'}
         </ArrowButton>
       </ActionBar>
     </Screen>

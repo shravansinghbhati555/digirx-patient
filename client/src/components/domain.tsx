@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { nextAvailable, type DayOption, type SlotGroup } from '../lib/availability';
+import { nextAvailable, useAvailabilityVersion, type DayOption, type SlotGroup } from '../lib/availability';
 import { dayMonth, dayNum, dayPadded, dow, relativeDay, rupees, timeRange } from '../lib/format';
 import { clinicById, doctorById, forLabel, recordTypes } from '../lib/selectors';
 import type { Appointment, Clinic, Doctor, HealthRecord, Mood, PortalData } from '../types';
@@ -123,6 +123,7 @@ export function AppointmentRow({ appt, data, index = 0 }: { appt: Appointment; d
 /* ---------- Doctors & clinics ---------- */
 
 export function DoctorCard({ doctor, data, clinicId }: { doctor: Doctor; data: PortalData; clinicId?: string }) {
+  useAvailabilityVersion();
   const cid = clinicId ?? doctor.clinics[0].clinicId;
   const clinic = clinicById(data, cid);
   const next = nextAvailable(doctor, cid, data.appointments);
@@ -134,11 +135,12 @@ export function DoctorCard({ doctor, data, clinicId }: { doctor: Doctor; data: P
         <span className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="text-[16px] font-semibold">{doctor.name}</span>
           <span className="text-[13px] text-text-caption">
-            {doctor.qualifications.split(' (')[0]} · {doctor.years} yrs
+            {[doctor.qualifications.split(' (')[0], doctor.years > 0 ? `${doctor.years} yrs` : ''].filter(Boolean).join(' · ') || doctor.speciality}
           </span>
           {clinic && (
             <span className="truncate text-[13px] text-text-caption">
-              {clinic.name} · {clinic.distanceKm} km
+              {clinic.name}
+              {clinic.distanceKm >= 0 && ` · ${clinic.distanceKm} km`}
             </span>
           )}
         </span>
@@ -170,7 +172,7 @@ export function ClinicCard({ clinic, extraTag }: { clinic: Clinic; extraTag?: st
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="text-[16px] font-semibold">{clinic.name}</span>
         <span className="text-[13px] text-text-caption">
-          {clinic.area} · {clinic.distanceKm} km · {clinic.doctorCount} doctors
+          {[clinic.area, clinic.distanceKm >= 0 ? `${clinic.distanceKm} km` : '', `${clinic.doctorCount} doctors`].filter(Boolean).join(' · ')}
         </span>
         <span className="mt-0.5 flex flex-wrap gap-1.5">
           <Tag tone="ok" className="text-[12px] font-medium">

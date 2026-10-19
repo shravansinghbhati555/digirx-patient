@@ -8,7 +8,7 @@ import { Screen } from '../../components/ui/Layout';
 import { Sheet } from '../../components/ui/Overlay';
 import { NoResults } from '../../components/ui/States';
 import { TODAY } from '../../data/mock';
-import { nextAvailable } from '../../lib/availability';
+import { nextAvailable, useAvailabilityVersion } from '../../lib/availability';
 import { addDays, plural, rupees, timeToMinutes } from '../../lib/format';
 import { clinicById } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';
@@ -48,6 +48,7 @@ function applyDoctors(d: PortalData, q: string, speciality: string | null, f: Fi
   const needle = q.trim().toLowerCase();
   const limit = f.when === 'today' ? TODAY : f.when === 'tomorrow' ? addDays(TODAY, 1) : f.when === 'week' ? addDays(TODAY, 6) : null;
   return d.doctors
+    .filter((doc) => doc.bookable !== false)
     .map((doc) => {
       const cid = doc.clinics.find((c) => f.clinics.includes(c.clinicId))?.clinicId;
       return { doc, cid, next: cid ? nextAvailable(doc, cid, d.appointments) : null };
@@ -68,6 +69,7 @@ function applyDoctors(d: PortalData, q: string, speciality: string | null, f: Fi
 
 export function Search() {
   const { data } = usePortalData();
+  const availability = useAvailabilityVersion();
   const [params, setParams] = useSearchParams();
   const [q, setQ] = useState(params.get('q') ?? '');
   const speciality = params.get('speciality');
@@ -82,7 +84,7 @@ export function Search() {
     const key = (x: (typeof list)[number]) =>
       sort === 'fee' ? String(x.doc.fee).padStart(5, '0') : x.next ? `${x.next.date} ${String(timeToMinutes(x.next.times[0])).padStart(4, '0')}` : 'z';
     return list.sort((a, b) => key(a).localeCompare(key(b)));
-  }, [data, q, speciality, filters, sort]);
+  }, [data, q, speciality, filters, sort, availability]);
 
   const clinics = data.clinics.filter(
     (c) =>
@@ -286,7 +288,7 @@ function FilterBody({ data, draft, setDraft }: { data: PortalData; draft: Filter
                   {on && <Icon name="check" size={16} strokeWidth={2.4} />}
                 </span>
                 <span className="flex-1">{c.name}</span>
-                <span className="text-[13px] text-text-caption">{c.distanceKm} km</span>
+                {c.distanceKm >= 0 && <span className="text-[13px] text-text-caption">{c.distanceKm} km</span>}
               </label>
             );
           })}

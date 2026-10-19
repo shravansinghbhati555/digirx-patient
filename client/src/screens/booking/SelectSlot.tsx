@@ -6,8 +6,9 @@ import { Chip } from '../../components/ui/Bits';
 import { ArrowButton, BackButton, IconButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { ActionBar, BarSummary, Screen } from '../../components/ui/Layout';
+import { useToast } from '../../components/ui/Overlay';
 import { TODAY } from '../../data/mock';
-import { bookingDays, openSlots, slotsFor } from '../../lib/availability';
+import { bookingDays, openSlots, useSlots } from '../../lib/availability';
 import { addDays, daysFromToday, longDate, monthYear, rupees, shortDate } from '../../lib/format';
 import { bookablePeople, clinicById, doctorById, patientLabel } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';
@@ -17,6 +18,8 @@ const WEEKS = 3;
 export function SelectSlot() {
   const { data, state, actions } = usePortalData();
   const navigate = useNavigate();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
   const draft = state.draft;
   const doctor = doctorById(data, draft?.doctorId);
   const [week, setWeek] = useState(() =>
@@ -27,17 +30,15 @@ export function SelectSlot() {
     () => (doctor && draft ? bookingDays(doctor, draft.clinicId, addDays(TODAY, week * 7), 7) : []),
     [doctor, draft, week],
   );
-  const groups = useMemo(
-    () => (doctor && draft ? slotsFor(doctor, draft.clinicId, draft.date, data.appointments) : []),
-    [doctor, draft, data.appointments],
-  );
+  const slots = useSlots(doctor, draft?.clinicId, draft?.date ?? TODAY, undefined, data.appointments);
+  const groups = slots.groups;
 
   // Keep the selected time valid when the date or clinic changes.
   useEffect(() => {
-    if (!draft) return;
+    if (!draft || slots.loading) return;
     const open = openSlots(groups);
     if (draft.time && !open.includes(draft.time)) actions.patchDraft({ time: '' });
-  }, [groups, draft, actions]);
+  }, [groups, draft, actions, slots.loading]);
 
   if (!draft || !doctor) return <Navigate to="/discover" replace />;
   const clinic = clinicById(data, draft.clinicId)!;
@@ -48,9 +49,12 @@ export function SelectSlot() {
   const summary = ready ? `${shortDate(draft.date)} · ${draft.time}` : 'Pick a time';
   const forName = who.find((p) => p.id === draft.patientId)?.label ?? 'Me';
 
-  const confirmNow = () => {
-    const appt = actions.confirmBooking();
+  const confirmNow = async () => {
+    setBusy(true);
+    const { appt, error } = await actions.confirmBooking();
+    setBusy(false);
     if (appt) navigate(`/book/confirmed/${appt.id}`, { replace: true });
+    else if (error) toast({ message: error, tone: 'info' });
   };
 
   const picker = (
@@ -120,7 +124,11 @@ export function SelectSlot() {
         <DayPicker days={days} value={draft.date} onChange={pickDay} tintOnDesktop />
       </div>
 
-      {groups.length ? (
+      {slots.loading ? (
+        <p className="m-0 mt-6 rounded-[20px] bg-surface/70 p-4 text-[14px] text-text-muted">Checking the doctor's diary…</p>
+      ) : slots.error ? (
+        <p className="m-0 mt-6 rounded-[20px] bg-surface/70 p-4 text-[14px] text-text-muted">{slots.error}</p>
+      ) : groups.length ? (
         <SlotGrid groups={groups} value={draft.time} onChange={(time) => actions.patchDraft({ time })} tintOnDesktop />
       ) : (
         <p className="m-0 mt-6 rounded-[20px] bg-surface/70 p-4 text-[14px] text-text-muted">
@@ -170,7 +178,8 @@ export function SelectSlot() {
           </span>
           <span className="text-[22px] font-semibold tracking-[-0.02em]">{doctor.name}</span>
           <span className="text-[14px] text-text-muted">
-            {doctor.speciality} · {doctor.years} yrs
+            {doctor.speciality}
+            {doctor.years > 0 && ` · ${doctor.years} yrs`}
           </span>
           <span className="text-[14px] text-text-muted">
             {clinic.name}, {clinic.area}
@@ -197,14 +206,14 @@ export function SelectSlot() {
               ['Patient', patientLabel(data, draft.patientId)],
               ['Doctor', doctor.name],
               ['Clinic', `${clinic.short}, ${clinic.area}`],
-              ['Fee', `${rupees(doctor.fee)} · pay at clinic`],
+              ['Fee', doctor.fee > 0 ? `${rupees(doctor.fee)} · pay at clinic` : 'Pay at clinic'],
             ].map(([k, v]) => (
               <div key={k} className="row justify-between !py-[11px] text-[14px]">
                 <span className="text-text-caption">{k}</span>
                 <span className="text-right font-medium">{v}</span>
               </div>
             ))}
-            <ArrowButton wide glyph="check" className="mt-3 !h-14 !text-[15px]" disabled={!ready} onClick={confirmNow}>
+            <ArrowButton wide glyph="check" className="mt-3 !h-14 !text-[15px]" disabled={!ready || busy} onClick={confirmNow}>
               Confirm booking
             </ArrowButton>
             <Link to="/book/review" className={`mt-3 text-center text-[13px] font-medium underline ${ready ? '' : 'pointer-events-none opacity-50'}`}>

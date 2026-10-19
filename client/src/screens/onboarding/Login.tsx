@@ -4,6 +4,7 @@ import { Face, Flower, faces } from '../../components/ui/Art';
 import { ArrowButton, BackButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { requestOtp } from '../../services/api';
+import { errorMessage } from '../../services/http';
 import { usePortal } from '../../state/portal';
 import { AuthFrame } from './AuthFrame';
 
@@ -27,7 +28,13 @@ export function Login() {
     }
     setBusy(true);
     const full = `+91 ${pretty(phone)}`;
-    await requestOtp(full);
+    try {
+      await requestOtp(full);
+    } catch (err) {
+      setBusy(false);
+      setError(errorMessage(err));
+      return;
+    }
     actions.startLogin(full);
     navigate('/otp');
   };

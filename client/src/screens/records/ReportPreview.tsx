@@ -6,6 +6,8 @@ import { useToast } from '../../components/ui/Overlay';
 import { fullDate } from '../../lib/format';
 import { clinicById } from '../../lib/selectors';
 import { downloadText, shareOrCopy } from '../../lib/share';
+import { API_MODE, reportUrl } from '../../services/api';
+import { openSignedFile } from '../../lib/files';
 import { usePortalData } from '../../state/portal';
 import { NotFound } from '../system/NotFound';
 
@@ -20,7 +22,9 @@ export function ReportPreview() {
   const flagged = r.results?.filter((x) => x.flag) ?? [];
 
   const download = () =>
-    downloadText(
+    API_MODE
+      ? openSignedFile(() => reportUrl(r.id), (message) => toast({ message, tone: 'info' }))
+      : downloadText(
       `${r.title}.txt`,
       [
         `${r.title} — ${clinic?.name ?? 'Uploaded by you'}`,

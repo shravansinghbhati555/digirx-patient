@@ -5,7 +5,25 @@ import type { PortalData } from '../types';
  * 13 Oct 2026 (a Tuesday) as "today" so relative labels like "Tomorrow"
  * match the designs. Replace with the real API in `services/api.ts`.
  */
-export const TODAY = '2026-10-13';
+const MOCK_TODAY = '2026-10-13';
+
+function deviceToday(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/**
+ * "Today" for relative labels and date pickers. The mock keeps the fixed
+ * design date; against the real API it starts as the device's date and is
+ * replaced by the clinic-local date the server sends with the portal data.
+ * (A live binding: importers always read the current value.)
+ */
+export let TODAY = import.meta.env.VITE_API_BASE_URL ? deviceToday() : MOCK_TODAY;
+
+export function setToday(date: string) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) TODAY = date;
+}
 
 const noGrants = { book: false, rx: false, reports: false, bills: false };
 const allGrants = { book: true, rx: true, reports: true, bills: true };

@@ -4,7 +4,7 @@ Patient-facing portal for DigiRx clinics: book visits, manage appointments, see 
 
 It is phone-first, with tablet and desktop layouts. The UI is built from the **DigiRx Patient Portal** design canvas, all 45 artboards.
 
-This is the **client** of a MERN app. The server (`server/`, Express + MongoDB) comes next. Until then, the client runs on mock data behind an async API boundary.
+It talks to the **existing DigiRx NestJS backend** (`../backend`), the same API and database the clinic app uses, through its `/portal/*` routes. With no API configured it runs on mock data, which is handy for UI work.
 
 ## Run it
 
@@ -40,7 +40,8 @@ Breakpoints are the `tablet:` and `desktop:` Tailwind screens. Tokens (colours, 
 client/src/
   types.ts               domain model (clinic, doctor, appointment, record, invoice, family grants…)
   data/mock.ts           fixtures from the designs + TODAY
-  services/api.ts        API boundary — swap mock for `${VITE_API_BASE_URL}/portal/me`
+  services/api.ts        API boundary: real /portal/* calls, or the mock when no API is set
+  services/http.ts       token + refresh-cookie handling for the portal API
   state/portal.tsx       context + reducer: session, data, booking draft, all mutations
   lib/                   dates/currency, availability (slot stand-in), selectors, .ics, share
   components/ui/         design system: Icon, Art (flowers/faces), Button, Bits, Overlay, Layout, States
@@ -68,13 +69,19 @@ client/src/
 | 24–26 Profile, privacy, help | `/profile` `/privacy` `/help` |
 | 27 Loading / empty / error / success / confirm | shell skeleton, `EmptyState`, `ErrorState` + offline banner, `/done`, `ConfirmDialog` |
 
-## Wiring the server
+## Connecting to the DigiRx backend
 
-1. Implement `GET /portal/me`, returning `PortalData` (see `types.ts`). Then set `VITE_API_BASE_URL`.
-2. Replace the stand-ins:
-   - `requestOtp`/`verifyOtp` in `services/api.ts`
-   - `slotsFor` in `lib/availability.ts`, with the clinic availability API
-   - the reducer mutations in `state/portal.tsx`, with POST/PATCH calls (book, cancel, reschedule, grants, pay)
-3. The access model from the handoff still applies:
-   - Clinics see only their own records unless the patient turns on sharing (`privacy.clinicSharing`).
-   - Adult family members see nothing by default; each grant is one-directional (`theyAllow` / `youAllow`).
+The portal uses the backend's patient-portal API (`backend/src/modules/patient-portal`). It's off by default, so turn it on in both places:
+
+1. **Backend `.env`**: `PATIENT_PORTAL_ENABLED=true`, a `JWT_PORTAL_SECRET` (32+ characters, different from the staff secrets), and the portal origin in `CORS_ORIGINS` (dev: `http://localhost:5174`; prod: `https://patient.digirx.com`). Set `NOTIFICATION_PROVIDER=twilio` for real OTP SMS. With the default console provider, the code is printed in the backend log.
+2. **Each clinic opts in** through its settings: `PATCH /clinics/:id/settings` with `{ "portal": { "enabled": true, "bookingEnabled": true } }`. Optional fields: `bookableDoctorIds`, `maxAdvanceDays`, `cancellationLeadTimeHours`, `maxActiveFutureAppointments`.
+3. **Client**: copy `client/.env.example` to `client/.env` and set `VITE_API_BASE_URL`.
+
+How records reach a patient: after OTP login the patient enters a name and date of birth. Clinic records with the **same mobile number AND date of birth** are linked automatically. Records are never merged, and an ambiguous match is left unlinked. A child is added under Family with their own date of birth.
+
+Access model:
+- Clinics see only their own records. A clinic sees records from other clinics only after the patient turns on sharing for it (Privacy, or "share past records" when booking). Staff read those through `GET /patients/:id/shared-records`.
+- Adult family members see nothing by default. Each grant (`book`, `rx`, `reports`, `bills`) goes one way and can be revoked at any time. Visit history is never shared with adults.
+- Medical data isn't stored in the browser. Only the signed-in flag is kept; records are fetched fresh on each load.
+
+Online payment uses Razorpay Checkout when the backend has `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` set. Otherwise patients are told to pay at the clinic.

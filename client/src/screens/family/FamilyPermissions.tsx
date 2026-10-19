@@ -32,9 +32,13 @@ export function FamilyPermissions() {
   if (!m) return <NotFound />;
   const rel = m.relation.toLowerCase();
 
-  const remove = () => {
-    actions.removeMember(m.id);
+  const remove = async () => {
+    const res = await actions.removeMember(m.id);
     setConfirm(false);
+    if (!res.ok) {
+      toast({ message: res.error, tone: 'info' });
+      return;
+    }
     toast({ message: `${m.firstName} removed from your family`, tone: 'info' });
     navigate('/family', { replace: true });
   };
@@ -54,7 +58,13 @@ export function FamilyPermissions() {
         </span>
       </div>
 
-      {m.kind === 'dependant' ? (
+      {m.shared ? (
+        <div className="mt-4">
+          <Note tone="hero" icon="shield">
+            {m.firstName} is {m.note.charAt(0).toLowerCase() + m.note.slice(1)}, so they show on your tree too. Their own account decides what you can see.
+          </Note>
+        </div>
+      ) : m.kind === 'dependant' ? (
         <>
           <div className="mt-4">
             <Note tone="hero" icon="shield">
@@ -132,9 +142,11 @@ export function FamilyPermissions() {
         </>
       )}
 
-      <Button variant="dangerSoft" className="mt-[18px]" onClick={() => setConfirm(true)}>
-        {m.kind === 'pending' ? 'Cancel invite' : 'Remove from family'}
-      </Button>
+      {!m.shared && (
+        <Button variant="dangerSoft" className="mt-[18px]" onClick={() => setConfirm(true)}>
+          {m.kind === 'pending' ? 'Cancel invite' : 'Remove from family'}
+        </Button>
+      )}
 
       <ConfirmDialog
         open={confirm}

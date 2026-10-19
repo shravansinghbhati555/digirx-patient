@@ -7,6 +7,7 @@ import { Screen } from '../../components/ui/Layout';
 import { useToast } from '../../components/ui/Overlay';
 import { DashboardSkeleton } from '../../components/ui/States';
 import { usePortal } from '../../state/portal';
+import { API_MODE, dobToIso } from '../../services/api';
 import type { Patient, PortalData } from '../../types';
 import { AuthFrame } from './AuthFrame';
 
@@ -45,13 +46,18 @@ function ProfileForm({ data, editing }: { data: PortalData; editing: boolean }) 
   const [blood, setBlood] = useState(p.bloodGroup ?? '');
   const [email, setEmail] = useState(p.email ?? '');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   const clinicsWithRecords = new Set(data.records.map((r) => r.clinicId)).size;
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setError('Add your full name so clinics can match your records.');
+      return;
+    }
+    if (API_MODE && !dobToIso(dob)) {
+      setError('Enter your date of birth as DD / MM / YYYY. It is how we find your clinic records.');
       return;
     }
     if (email && !/^\S+@\S+\.\S+$/.test(email)) {
@@ -65,7 +71,14 @@ function ProfileForm({ data, editing }: { data: PortalData; editing: boolean }) 
       .slice(0, 2)
       .map((w) => w[0]?.toUpperCase())
       .join('');
-    actions.completeProfile({ name: name.trim(), firstName: first, initials, dob, gender, bloodGroup: blood || undefined, email: email || undefined });
+    setBusy(true);
+    const res = await actions.completeProfile({ name: name.trim(), firstName: first, initials, dob, gender, bloodGroup: blood || undefined, email: email || undefined });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    if (res.linked) toast({ message: `Linked your records at ${res.linked} clinic${res.linked === 1 ? '' : 's'}` });
     if (editing) {
       toast({ message: 'Profile updated' });
       navigate('/profile');
@@ -100,7 +113,16 @@ function ProfileForm({ data, editing }: { data: PortalData; editing: boolean }) 
           {editing ? 'Personal & health details' : 'Tell us a little about you'}
         </h1>
 
-        {!editing && clinicsWithRecords > 0 && (
+        {!editing && API_MODE && (
+          <div className="mt-[18px] flex items-center gap-3 rounded-[20px] bg-hero px-4 py-3.5">
+            <Icon name="file" />
+            <span className="text-[14px] font-medium leading-[1.4]">
+              Your mobile number and date of birth are how we find your records at DigiRx clinics. Nothing else is matched.
+            </span>
+          </div>
+        )}
+
+        {!editing && !API_MODE && clinicsWithRecords > 0 && (
           <div className="mt-[18px] flex items-center gap-3 rounded-[20px] bg-hero px-4 py-3.5">
             <Icon name="file" />
             <span className="text-[14px] font-medium leading-[1.4]">
@@ -134,7 +156,21 @@ function ProfileForm({ data, editing }: { data: PortalData; editing: boolean }) 
         <label className="label mb-2 mt-4 block" htmlFor="dob">
           Date of birth
         </label>
-        <input id="dob" className="field" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="DD / MM / YYYY" inputMode="numeric" />
+        <input
+          id="dob"
+          className="field disabled:opacity-60"
+          value={dob}
+          onChange={(e) => setDob(e.target.value)}
+          placeholder="DD / MM / YYYY"
+          inputMode="numeric"
+          disabled={!!p.dobLocked}
+          aria-describedby={p.dobLocked ? 'dob-locked' : undefined}
+        />
+        {p.dobLocked && (
+          <span id="dob-locked" className="mt-1.5 block text-[12px] text-text-muted">
+            Linked to your clinic records. Ask your clinic to correct it.
+          </span>
+        )}
 
         <span className="label mb-2 mt-4 block" id="gender-l">
           Gender
@@ -178,7 +214,7 @@ function ProfileForm({ data, editing }: { data: PortalData; editing: boolean }) 
           </p>
         )}
 
-        <ArrowButton type="submit" wide className="mt-[26px]">
+        <ArrowButton type="submit" wide className="mt-[26px]" disabled={busy}>
           {editing ? 'Save changes' : 'Continue'}
         </ArrowButton>
       </form>
