@@ -79,7 +79,7 @@ export function MedicalHistory() {
   return (
     <Screen width="wide">
       {/* ---------- Phone & tablet ---------- */}
-      <div className="flex flex-col desktop:hidden tablet:mx-auto tablet:w-full tablet:max-w-[720px]">
+      <div className="flex flex-col desktop:hidden tablet:mx-auto tablet:w-full">
         <div className="flex items-center justify-between">
           <h1 className="h1">Health records</h1>
           <IconButton icon={searching ? 'close' : 'search'} label={searching ? 'Close search' : 'Search records'} onClick={() => { setSearching(!searching); setQ(''); }} />

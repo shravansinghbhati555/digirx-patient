@@ -14,7 +14,7 @@ export function Welcome() {
       <Face size={150} spec={faces.happy} rotate={-8} className="absolute left-[66px] top-[102px]" />
       <Flower size={110} color="#FDFCFB" bold={false} className="absolute -right-1.5 top-[168px] rotate-[18deg]" />
 
-      <div className="relative z-10 flex flex-col items-center gap-[22px] px-7 pt-[352px] text-center">
+      <div className="relative z-10 flex flex-col items-center gap-[22px] px-7 pt-[275px] text-center">
         <span className="rounded-full bg-surface/55 px-3.5 py-1.5 text-[15px] font-semibold tracking-[-0.01em]">digiRx · Patient</span>
         <h1 className="m-0 text-[38px] font-semibold leading-[1.12] tracking-[-0.03em]">Your care, every clinic, one place</h1>
         <ArrowButton to="/login" tone="glass">
