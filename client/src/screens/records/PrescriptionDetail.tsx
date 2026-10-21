@@ -6,8 +6,8 @@ import { ActionBar, PageHeader, Screen } from '../../components/ui/Layout';
 import { useToast } from '../../components/ui/Overlay';
 import { fullDate, plural } from '../../lib/format';
 import { clinicById, doctorById } from '../../lib/selectors';
-import { downloadText, shareOrCopy } from '../../lib/share';
-import { API_MODE, prescriptionPdfUrl } from '../../services/api';
+import { shareOrCopy } from '../../lib/share';
+import { prescriptionPdfUrl } from '../../services/api';
 import { openSignedFile } from '../../lib/files';
 import { usePortalData } from '../../state/portal';
 import { NotFound } from '../system/NotFound';
@@ -38,11 +38,11 @@ export function PrescriptionDetail() {
       <PageHeader
         title={<span className="text-[13px]">{rx.id}</span>}
         back="/prescriptions"
-        right={<IconButton icon="download" label="Download prescription" onClick={() =>
-              API_MODE
-                ? openSignedFile(() => prescriptionPdfUrl(rx.id), (message) => toast({ message, tone: 'info' }))
-                : downloadText(`${rx.id}.txt`, text)
-            }
+        right={
+          <IconButton
+            icon="download"
+            label="Download prescription"
+            onClick={() => openSignedFile(() => prescriptionPdfUrl(rx.id), (message) => toast({ message, tone: 'info' }))}
           />
         }
       />

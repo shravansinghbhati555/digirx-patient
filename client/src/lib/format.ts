@@ -1,4 +1,4 @@
-import { TODAY } from '../data/mock';
+import { TODAY } from './today';
 import type { LocalDate } from '../types';
 
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

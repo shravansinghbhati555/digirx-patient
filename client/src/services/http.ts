@@ -7,10 +7,7 @@
  * a 401, the client refreshes once through the cookie, and retries.
  */
 
-export const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, '');
-
-/** True when the portal talks to the real backend instead of the mock. */
-export const API_MODE = !!API_BASE;
+export const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/+$/, '') ?? '';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -50,6 +47,9 @@ async function raw(path: string, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   if (init.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  if (!API_BASE) {
+    throw new ApiError(0, 'Set VITE_API_BASE_URL to the DigiRx backend.');
+  }
   try {
     return await fetch(`${API_BASE}${path}`, { ...init, headers, credentials: 'include' });
   } catch {

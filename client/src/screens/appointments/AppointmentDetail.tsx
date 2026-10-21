@@ -15,13 +15,10 @@ import { usePortalData } from '../../state/portal';
 import type { Appointment } from '../../types';
 import { NotFound } from '../system/NotFound';
 
-/** The demo clock: 2 PM on TODAY. */
-const NOW_MIN = 14 * 60;
-
 function minutesUntil(a: Appointment) {
-  // With the API the exact start instant is known; the mock uses the demo clock.
   if (a.startAt) return Math.round((Date.parse(a.startAt) - Date.now()) / 60000);
-  return daysFromToday(a.date) * 1440 + timeToMinutes(a.time) - NOW_MIN;
+  const now = new Date();
+  return daysFromToday(a.date) * 1440 + timeToMinutes(a.time) - (now.getHours() * 60 + now.getMinutes());
 }
 
 function untilLabel(a: Appointment) {

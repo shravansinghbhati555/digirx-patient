@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { nextAvailable } from '../../lib/availability';
 import { doctorById } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';
-import { TODAY } from '../../data/mock';
+import { TODAY } from '../../lib/today';
 import type { ID, LocalDate } from '../../types';
 
 /** Seeds a booking draft (soonest open slot unless one is given) and opens the slot picker. */

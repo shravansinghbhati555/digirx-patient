@@ -11,14 +11,13 @@ import {
   type ReactNode,
 } from 'react';
 import * as portalApi from '../services/api';
-import { API_MODE, fetchPortal, logoutSession } from '../services/api';
+import { fetchPortal, logoutSession } from '../services/api';
 import { errorMessage, setSignedOutHandler } from '../services/http';
 import { invalidateAvailability } from '../lib/availability';
 import { payWithRazorpay } from '../lib/pay';
 import type {
   Appointment,
   BookingDraft,
-  FamilyMember,
   Grants,
   ID,
   Invoice,
@@ -27,8 +26,6 @@ import type {
   PortalData,
   PrivacySettings,
 } from '../types';
-import { TODAY } from '../data/mock';
-
 interface Session {
   phone: string;
   profileDone: boolean;
@@ -61,15 +58,11 @@ type Action =
   | { type: 'patchDraft'; patch: Partial<BookingDraft> }
   | { type: 'addAppointment'; appt: Appointment }
   | { type: 'replaceAppointment'; appt: Appointment }
-  | { type: 'cancel'; id: ID; reason: string }
-  | { type: 'reschedule'; id: ID; date: LocalDate; time: string }
   | { type: 'grant'; memberId: ID; key: keyof Grants; value: boolean }
   | { type: 'removeMember'; id: ID }
-  | { type: 'addMember'; member: FamilyMember }
   | { type: 'privacy'; patch: Partial<PrivacySettings> }
   | { type: 'clinicShare'; clinicId: ID; value: boolean }
-  | { type: 'readNotifications'; ids?: ID[] }
-  | { type: 'pay'; id: ID; method: Invoice['method'] };
+  | { type: 'readNotifications'; ids?: ID[] };
 
 const STORAGE_KEY = 'digirx.patient.v1';
 
@@ -80,15 +73,11 @@ function load(): State {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return initial;
     const saved = JSON.parse(raw) as Partial<State>;
-    // With the real API, records are always fetched fresh, never kept on disk.
-    const data = API_MODE ? null : (saved.data ?? null);
     return {
       ...initial,
       session: saved.session ?? null,
       mood: saved.mood ?? 'great',
       draft: saved.draft ?? null,
-      data,
-      status: data ? 'ready' : 'idle',
     };
   } catch {
     return initial;
@@ -137,17 +126,6 @@ function reducer(s: State, a: Action): State {
       return withData(s, (d) => ({ ...d, appointments: [a.appt, ...d.appointments.filter((x) => x.id !== a.appt.id)] }));
     case 'replaceAppointment':
       return withData(s, (d) => mapAppt(d, a.appt.id, () => a.appt));
-    case 'cancel':
-      return withData(s, (d) =>
-        mapAppt(d, a.id, (x) => ({
-          ...x,
-          status: 'cancelled',
-          cancelledBy: 'you',
-          outcomeNote: `Reason: ${a.reason.toLowerCase()} · No charge`,
-        })),
-      );
-    case 'reschedule':
-      return withData(s, (d) => mapAppt(d, a.id, (x) => ({ ...x, date: a.date, time: a.time })));
     case 'grant':
       return withData(s, (d) => ({
         ...d,
@@ -159,8 +137,6 @@ function reducer(s: State, a: Action): State {
       }));
     case 'removeMember':
       return withData(s, (d) => ({ ...d, family: d.family.filter((m) => m.id !== a.id) }));
-    case 'addMember':
-      return withData(s, (d) => ({ ...d, family: [...d.family, a.member] }));
     case 'privacy':
       return withData(s, (d) => ({ ...d, privacy: { ...d.privacy, ...a.patch } }));
     case 'clinicShare':
@@ -172,15 +148,6 @@ function reducer(s: State, a: Action): State {
       return withData(s, (d) => ({
         ...d,
         notifications: d.notifications.map((n) => (!a.ids || a.ids.includes(n.id) ? { ...n, unread: false } : n)),
-      }));
-    case 'pay':
-      return withData(s, (d) => ({
-        ...d,
-        invoices: d.invoices.map((i) =>
-          i.id === a.id
-            ? { ...i, status: 'paid', method: a.method, paidOn: TODAY, reference: `${a.method} ref. ${Date.now().toString().slice(-12)}` }
-            : i,
-        ),
       }));
   }
 }
@@ -201,9 +168,9 @@ function makeActions(dispatch: Dispatch<Action>, get: () => State, reload: () =>
   return {
     startLogin: (phone: string) => dispatch({ type: 'startLogin', phone }),
     signIn: (profileDone = false) => dispatch({ type: 'signIn', profileDone }),
-    /** Saves the profile (and, with the API, links matching clinic records). */
+    /** Saves the profile and links clinic charts on that mobile number. */
     completeProfile: async (patch: Partial<PortalData['patient']> = {}): Promise<Result & { linked?: number }> => {
-      if (!API_MODE || Object.keys(patch).length === 0) {
+      if (Object.keys(patch).length === 0) {
         dispatch({ type: 'completeProfile', patch });
         return OK;
       }
@@ -231,44 +198,18 @@ function makeActions(dispatch: Dispatch<Action>, get: () => State, reload: () =>
       const doctor = data.doctors.find((d) => d.id === draft.doctorId);
       const clinic = data.clinics.find((c) => c.id === draft.clinicId);
       if (!doctor || !clinic) return { appt: null };
-      if (API_MODE) {
-        try {
-          const appt = await portalApi.bookAppointment(draft, data.patient.id);
-          invalidateAvailability();
-          dispatch({ type: 'addAppointment', appt });
-          void reload();
-          return { appt };
-        } catch (e) {
-          invalidateAvailability();
-          return { appt: null, error: errorMessage(e) };
-        }
+      try {
+        const appt = await portalApi.bookAppointment(draft, data.patient.id);
+        invalidateAvailability();
+        dispatch({ type: 'addAppointment', appt });
+        void reload();
+        return { appt };
+      } catch (e) {
+        invalidateAvailability();
+        return { appt: null, error: errorMessage(e) };
       }
-      const n = String(Math.floor(10000 + Math.random() * 89999));
-      const appt: Appointment = {
-        id: `a-${n}`,
-        code: `${clinic.id.toUpperCase()}-${n}`,
-        patientId: draft.patientId,
-        doctorId: doctor.id,
-        clinicId: clinic.id,
-        date: draft.date,
-        time: draft.time,
-        durationMin: doctor.durationMin,
-        title: doctor.specialityId === 'gp' ? 'General consultation' : `${doctor.speciality} consultation`,
-        status: 'confirmed',
-        fee: doctor.fee,
-        payment: draft.payment,
-        reason: draft.reason || undefined,
-      };
-      // The draft is cleared by the confirmation screen once it mounts; clearing
-      // it here would trip the booking screens' "no draft" redirect first.
-      dispatch({ type: 'addAppointment', appt });
-      return { appt };
     },
     cancelAppointment: async (id: ID, reason: string): Promise<Result> => {
-      if (!API_MODE) {
-        dispatch({ type: 'cancel', id, reason });
-        return OK;
-      }
       try {
         const appt = await portalApi.cancelAppointment(id, reason);
         invalidateAvailability();
@@ -280,10 +221,6 @@ function makeActions(dispatch: Dispatch<Action>, get: () => State, reload: () =>
       }
     },
     reschedule: async (id: ID, date: LocalDate, time: string): Promise<Result> => {
-      if (!API_MODE) {
-        dispatch({ type: 'reschedule', id, date, time });
-        return OK;
-      }
       try {
         const appt = await portalApi.rescheduleAppointment(id, date, time);
         invalidateAvailability();
@@ -296,25 +233,17 @@ function makeActions(dispatch: Dispatch<Action>, get: () => State, reload: () =>
     },
     setGrant: async (memberId: ID, key: keyof Grants, value: boolean): Promise<Result> => {
       const member = get().data?.family.find((m) => m.id === memberId);
-      if (!API_MODE || !member?.connectionId) {
-        dispatch({ type: 'grant', memberId, key, value });
-        return OK;
-      }
+      if (!member?.connectionId) return { ok: false, error: 'This person controls their own access.' };
       dispatch({ type: 'grant', memberId, key, value });
       const res = await run(() => portalApi.setFamilyGrants(member.connectionId!, { [key]: value }), undefined, false);
       if (!res.ok) dispatch({ type: 'grant', memberId, key, value: !value });
       return res;
     },
     removeMember: async (id: ID): Promise<Result> => {
-      if (!API_MODE) {
-        dispatch({ type: 'removeMember', id });
-        return OK;
-      }
       const member = get().data?.family.find((m) => m.id === id);
       const target = member?.kind === 'dependant' ? id : (member?.connectionId ?? id);
       return run(() => portalApi.removeFamilyMember(target), () => dispatch({ type: 'removeMember', id }));
     },
-    addMember: (member: FamilyMember) => dispatch({ type: 'addMember', member }),
     addDependant: (input: { fullName: string; dob: string; relation?: string }) =>
       run(() => portalApi.addDependant(input)),
     inviteFamily: (input: { phone: string; name?: string; relation?: string }) =>
@@ -322,26 +251,20 @@ function makeActions(dispatch: Dispatch<Action>, get: () => State, reload: () =>
     respondInvite: (connectionId: ID, accept: boolean) => run(() => portalApi.respondInvite(connectionId, accept)),
     setPrivacy: async (patch: Partial<PrivacySettings>): Promise<Result> => {
       dispatch({ type: 'privacy', patch });
-      if (!API_MODE) return OK;
       const { appLock, hidePreviews } = patch;
       return run(() => portalApi.updatePrivacy({ appLock, hidePreviews }), undefined, false);
     },
     setClinicSharing: async (clinicId: ID, value: boolean): Promise<Result> => {
       dispatch({ type: 'clinicShare', clinicId, value });
-      if (!API_MODE) return OK;
       const res = await run(() => portalApi.setClinicSharing(clinicId, value));
       if (!res.ok) dispatch({ type: 'clinicShare', clinicId, value: !value });
       return res;
     },
     markRead: (ids?: ID[]) => {
       dispatch({ type: 'readNotifications', ids });
-      if (API_MODE) void portalApi.markNotificationsRead(ids).catch(() => undefined);
+      void portalApi.markNotificationsRead(ids).catch(() => undefined);
     },
-    payInvoice: async (id: ID, method: Invoice['method'] = 'UPI'): Promise<Result> => {
-      if (!API_MODE) {
-        dispatch({ type: 'pay', id, method });
-        return OK;
-      }
+    payInvoice: async (id: ID, _method: Invoice['method'] = 'UPI'): Promise<Result> => {
       const data = get().data;
       try {
         await payWithRazorpay(id, { name: data?.patient.name, phone: data?.patient.phone, email: data?.patient.email });
@@ -400,11 +323,8 @@ export function PortalProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const { session, data, mood, draft } = state;
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(API_MODE ? { session, mood, draft } : { session, data, mood, draft }),
-      );
+      const { session, mood, draft } = state;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ session, mood, draft }));
     } catch {
       /* storage unavailable (private mode) — state still works in memory */
     }

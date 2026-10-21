@@ -1,13 +1,12 @@
 import { useMemo, useState } from 'react';
 import { useToast } from '../../components/ui/Overlay';
-import { API_MODE } from '../../services/api';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { SlotGrid } from '../../components/domain';
 import { ArrowButton, IconButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { ActionBar, PageHeader, Screen } from '../../components/ui/Layout';
-import { TODAY } from '../../data/mock';
-import { openSlots, slotsFor, useSlots, worksOn } from '../../lib/availability';
+import { TODAY } from '../../lib/today';
+import { useSlots, worksOn } from '../../lib/availability';
 import { addDays, dayNum, dow, minutesToTime, monthYear, relativeDay, shortDate, timeToMinutes, toDate } from '../../lib/format';
 import { doctorById } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';
@@ -39,10 +38,7 @@ export function Reschedule() {
 
   // With the API, open days come from the doctor's weekly schedule; the
   // slots for a picked day are then loaded from the clinic.
-  const hasSlots = (d: string) =>
-    d >= TODAY &&
-    worksOn(doctor, appt.clinicId, d) &&
-    (API_MODE || openSlots(slotsFor(doctor, appt.clinicId, d, data.appointments, appt.id)).length > 0);
+  const hasSlots = (d: string) => d >= TODAY && worksOn(doctor, appt.clinicId, d);
 
   const changed = !!time && !(date === appt.date && time === appt.time);
   const evening = groups.find((g) => g.slots.some((s) => s.time === time))?.name;

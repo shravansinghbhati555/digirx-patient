@@ -2,7 +2,7 @@
   "name": "digirx-patient",
   "private": true,
   "version": "0.1.0",
-  "description": "DigiRx Patient Portal — MERN app (client first; server to follow)",
+  "description": "DigiRx Patient Portal — client for the DigiRx backend",
   "workspaces": [
     "client"
   ],

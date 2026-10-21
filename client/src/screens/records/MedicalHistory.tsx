@@ -6,7 +6,7 @@ import { Button, IconButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
 import { Screen } from '../../components/ui/Layout';
 import { NoResults } from '../../components/ui/States';
-import { TODAY } from '../../data/mock';
+import { TODAY } from '../../lib/today';
 import { addDays, dayPadded, dow, fullDate, monthYear, rupeesCompact } from '../../lib/format';
 import { clinicById, recordTypes } from '../../lib/selectors';
 import { downloadText } from '../../lib/share';

@@ -7,7 +7,7 @@ import { ArrowButton, BackButton, IconButton } from '../../components/ui/Button'
 import { Icon } from '../../components/ui/Icon';
 import { ActionBar, BarSummary, Screen } from '../../components/ui/Layout';
 import { useToast } from '../../components/ui/Overlay';
-import { TODAY } from '../../data/mock';
+import { TODAY } from '../../lib/today';
 import { bookingDays, openSlots, useSlots } from '../../lib/availability';
 import { addDays, daysFromToday, longDate, monthYear, rupees, shortDate } from '../../lib/format';
 import { bookablePeople, clinicById, doctorById, patientLabel } from '../../lib/selectors';

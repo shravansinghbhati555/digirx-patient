@@ -1,6 +1,5 @@
-// Domain types for the patient portal. Shapes follow the handoff's data
-// sources (clinics, doctors, availability, appointments, records,
-// prescriptions, billing) so the mock layer can be swapped for the API.
+// Domain types for the patient portal. These match the DigiRx backend
+// `/portal/*` responses.
 
 export type ID = string;
 

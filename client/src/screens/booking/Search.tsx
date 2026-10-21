@@ -7,7 +7,7 @@ import { Icon } from '../../components/ui/Icon';
 import { Screen } from '../../components/ui/Layout';
 import { Sheet } from '../../components/ui/Overlay';
 import { NoResults } from '../../components/ui/States';
-import { TODAY } from '../../data/mock';
+import { TODAY } from '../../lib/today';
 import { nextAvailable, useAvailabilityVersion } from '../../lib/availability';
 import { addDays, plural, rupees, timeToMinutes } from '../../lib/format';
 import { clinicById } from '../../lib/selectors';

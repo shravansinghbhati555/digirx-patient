@@ -5,8 +5,8 @@ import { ActionBar, Screen } from '../../components/ui/Layout';
 import { useToast } from '../../components/ui/Overlay';
 import { fullDate } from '../../lib/format';
 import { clinicById } from '../../lib/selectors';
-import { downloadText, shareOrCopy } from '../../lib/share';
-import { API_MODE, reportUrl } from '../../services/api';
+import { shareOrCopy } from '../../lib/share';
+import { reportUrl } from '../../services/api';
 import { openSignedFile } from '../../lib/files';
 import { usePortalData } from '../../state/portal';
 import { NotFound } from '../system/NotFound';
@@ -21,19 +21,7 @@ export function ReportPreview() {
   const p = data.patient;
   const flagged = r.results?.filter((x) => x.flag) ?? [];
 
-  const download = () =>
-    API_MODE
-      ? openSignedFile(() => reportUrl(r.id), (message) => toast({ message, tone: 'info' }))
-      : downloadText(
-      `${r.title}.txt`,
-      [
-        `${r.title} — ${clinic?.name ?? 'Uploaded by you'}`,
-        `${p.name} · ${fullDate(r.date)}`,
-        '',
-        ...(r.results ?? []).map((x) => `${x.test}: ${x.result} (range ${x.range})${x.flag ? ` ${x.flag}` : ''}`),
-        r.verifiedBy ? `\nVerified by ${r.verifiedBy}` : '',
-      ].join('\n'),
-    );
+  const download = () => openSignedFile(() => reportUrl(r.id), (message) => toast({ message, tone: 'info' }));
 
   return (
     <Screen>

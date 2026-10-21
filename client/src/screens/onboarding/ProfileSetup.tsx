@@ -7,7 +7,7 @@ import { Screen } from '../../components/ui/Layout';
 import { useToast } from '../../components/ui/Overlay';
 import { DashboardSkeleton } from '../../components/ui/States';
 import { usePortal } from '../../state/portal';
-import { API_MODE, dobToIso } from '../../services/api';
+import { dobToIso } from '../../services/api';
 import type { Patient, PortalData } from '../../types';
 import { AuthFrame } from './AuthFrame';
 
@@ -48,15 +48,13 @@ function ProfileForm({ data, editing }: { data: PortalData; editing: boolean }) 
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const clinicsWithRecords = new Set(data.records.map((r) => r.clinicId)).size;
-
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
       setError('Add your full name so clinics can match your records.');
       return;
     }
-    if (API_MODE && !dobToIso(dob)) {
+    if (!dobToIso(dob)) {
       setError('Enter your date of birth as DD / MM / YYYY. It is how we find your clinic records.');
       return;
     }
@@ -113,20 +111,11 @@ function ProfileForm({ data, editing }: { data: PortalData; editing: boolean }) 
           {editing ? 'Personal & health details' : 'Tell us a little about you'}
         </h1>
 
-        {!editing && API_MODE && (
+        {!editing && (
           <div className="mt-[18px] flex items-center gap-3 rounded-[20px] bg-hero px-4 py-3.5">
             <Icon name="file" />
             <span className="text-[14px] font-medium leading-[1.4]">
-              Your mobile number and date of birth are how we find your records at DigiRx clinics. Nothing else is matched.
-            </span>
-          </div>
-        )}
-
-        {!editing && !API_MODE && clinicsWithRecords > 0 && (
-          <div className="mt-[18px] flex items-center gap-3 rounded-[20px] bg-hero px-4 py-3.5">
-            <Icon name="file" />
-            <span className="text-[14px] font-medium leading-[1.4]">
-              We found your records at {clinicsWithRecords} DigiRx clinics. Confirm your details to link them.
+              Your mobile number is how we find your records at DigiRx clinics.
             </span>
           </div>
         )}

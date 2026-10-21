@@ -6,8 +6,8 @@ import { ActionBar, PageHeader, Screen } from '../../components/ui/Layout';
 import { Sheet, useToast } from '../../components/ui/Overlay';
 import { dayMonth, fullDate, rupees } from '../../lib/format';
 import { clinicById, doctorById, person } from '../../lib/selectors';
-import { downloadText, shareOrCopy } from '../../lib/share';
-import { API_MODE, invoicePdfUrl } from '../../services/api';
+import { shareOrCopy } from '../../lib/share';
+import { invoicePdfUrl } from '../../services/api';
 import { openSignedFile } from '../../lib/files';
 import { usePortalData } from '../../state/portal';
 import type { Invoice as InvoiceT } from '../../types';
@@ -38,18 +38,6 @@ export function Invoice() {
         ? { badge: 'REFUNDED', line: `Refunded on ${fullDate(inv.paidOn ?? inv.date)} to ${inv.method}` }
         : { badge: 'PAID', line: `Paid on ${fullDate(inv.paidOn ?? inv.date)} via ${inv.method}` };
 
-  const text = [
-    `${clinic?.name} — Invoice ${inv.id}`,
-    `${fullDate(inv.date)} · ${person(data, inv.patientId)?.name}`,
-    '',
-    ...inv.items.map((i) => `${i.label}: ${rupees(i.amount)}`),
-    `Total: ${rupees(total)}`,
-    '',
-    header.line,
-    inv.reference ?? '',
-    inv.gstin ? `GSTIN ${inv.gstin}` : '',
-  ].join('\n');
-
   const due = inv.outstanding ?? inv.amount;
   const pay = async () => {
     setPaying(true);
@@ -59,9 +47,7 @@ export function Invoice() {
     toast(res.ok ? { message: `Paid ${rupees(due)} to ${clinic?.short}` } : { message: res.error, tone: 'info' });
   };
   const downloadPdf = () =>
-    API_MODE
-      ? openSignedFile(() => invoicePdfUrl(inv.id), (message) => toast({ message, tone: 'info' }))
-      : downloadText(`${inv.id}.txt`, text);
+    openSignedFile(() => invoicePdfUrl(inv.id), (message) => toast({ message, tone: 'info' }));
 
   return (
     <Screen>
@@ -135,7 +121,7 @@ export function Invoice() {
         title={`Pay ${rupees(due)}`}
         footer={
           <ArrowButton wide glyph="check" onClick={pay} disabled={paying}>
-            {API_MODE ? 'Continue to secure payment' : `Pay with ${method}`}
+            Continue to secure payment
           </ArrowButton>
         }
       >

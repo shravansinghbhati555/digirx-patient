@@ -5,7 +5,7 @@ import { Avatar, IconTile, SectionHeader, Tag } from '../../components/ui/Bits';
 import { ArrowButton, IconButton } from '../../components/ui/Button';
 import { Icon, type IconName } from '../../components/ui/Icon';
 import { Screen } from '../../components/ui/Layout';
-import { TODAY } from '../../data/mock';
+import { TODAY } from '../../lib/today';
 import { daysFromToday, dayMonth, longDate, plural, relativeDay, rupees } from '../../lib/format';
 import { clinicById, doctorById, unreadCount, upcoming, yearSummary } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';

@@ -5,7 +5,7 @@ import { Chip, Tag, type Tone } from '../../components/ui/Bits';
 import { ArrowButton, BackButton } from '../../components/ui/Button';
 import { Screen } from '../../components/ui/Layout';
 import { NoResults } from '../../components/ui/States';
-import { TODAY } from '../../data/mock';
+import { TODAY } from '../../lib/today';
 import { dayMonth, plural, rupees } from '../../lib/format';
 import { clinicById } from '../../lib/selectors';
 import { usePortalData } from '../../state/portal';

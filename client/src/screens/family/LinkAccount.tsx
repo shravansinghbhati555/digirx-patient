@@ -6,7 +6,6 @@ import { ActionBar, PageHeader, Screen } from '../../components/ui/Layout';
 import { NoResults } from '../../components/ui/States';
 import { usePortalData } from '../../state/portal';
 import { useToast } from '../../components/ui/Overlay';
-import { API_MODE } from '../../services/api';
 
 interface Match {
   initial: string;
@@ -14,24 +13,12 @@ interface Match {
   meta: string;
 }
 
-/**
- * Stand-in lookup: the real endpoint returns a masked match only, never
- * details, until the other person approves.
- */
+/** The server never says whether a number has an account, so we only confirm the number. */
 function lookup(q: string): Match | null {
-  const digits = q.replace(/\D/g, '');
-  // The server never says whether a number has an account, so the request
-  // is simply sent to the number; nothing about them is shown here.
-  if (API_MODE) {
-    const national = digits.slice(-10);
-    return national.length === 10
-      ? { initial: '?', masked: `+91 ••••• ${national.slice(-5)}`, meta: "We'll send the request to this number" }
-      : null;
-  }
-  if (/^DRX/i.test(q.trim()) || digits.length >= 10) {
-    return { initial: 'S', masked: 'S***** M****', meta: 'Female · born 1964 · ID DRX-58-••-21' };
-  }
-  return null;
+  const national = q.replace(/\D/g, '').slice(-10);
+  return national.length === 10
+    ? { initial: '?', masked: `+91 ••••• ${national.slice(-5)}`, meta: "We'll send the request to this number" }
+    : null;
 }
 
 export function LinkAccount() {
@@ -48,39 +35,16 @@ export function LinkAccount() {
 
   const send = async () => {
     if (!result) return;
-    if (API_MODE) {
-      const res = await actions.inviteFamily({ phone: q.replace(/\D/g, '').slice(-10) });
-      if (!res.ok) {
-        toast({ message: res.error, tone: 'info' });
-        return;
-      }
-      navigate('/done', {
-        replace: true,
-        state: {
-          title: 'Link request sent',
-          body: "If they use DigiRx they'll see your request. Their records stay private unless they choose to share.",
-          primary: { label: 'Back to family', to: '/family' },
-        },
-      });
+    const res = await actions.inviteFamily({ phone: q.replace(/\D/g, '').slice(-10) });
+    if (!res.ok) {
+      toast({ message: res.error, tone: 'info' });
       return;
     }
-    actions.addMember({
-      id: `m-${Date.now()}`,
-      name: result.masked,
-      firstName: result.masked.split(' ')[0],
-      initials: result.initial,
-      color: '#FDFCFB',
-      relation: 'Family',
-      kind: 'pending',
-      note: 'Link request sent just now',
-      theyAllow: { book: false, rx: false, reports: false, bills: false },
-      youAllow: { book: false, rx: false, reports: false, bills: false },
-    });
     navigate('/done', {
       replace: true,
       state: {
         title: 'Link request sent',
-        body: "They'll get an SMS and an in-app request. Their records stay private unless they choose to share.",
+        body: "If they use DigiRx they'll see your request. Their records stay private unless they choose to share.",
         primary: { label: 'Back to family', to: '/family' },
       },
     });

@@ -1,4 +1,4 @@
-import { mockPortal, setToday } from '../data/mock';
+import { setToday } from '../lib/today';
 import type {
   Appointment,
   BookingDraft,
@@ -10,29 +10,16 @@ import type {
   PrivacySettings,
 } from '../types';
 import type { SlotGroup } from '../lib/availability';
-import { API_MODE, ApiError, api, setAccessToken } from './http';
+import { ApiError, api, setAccessToken } from './http';
 
-/**
- * API boundary. Everything the screens need goes through here.
- *
- * With `VITE_API_BASE_URL` set, calls go to the DigiRx backend's
- * `/portal/*` API. Without it, the portal runs on the mock data, exactly as
- * the design build did (handy for UI work).
- */
+/** Everything the screens need, against the DigiRx backend `/portal/*` API. */
 
-export { API_MODE, ApiError } from './http';
-
-const LATENCY_MS = 700;
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+export { ApiError } from './http';
 
 // --- Auth -------------------------------------------------------------------
 
 export async function requestOtp(phone: string): Promise<{ sentTo: string }> {
-  if (API_MODE) {
-    await api('/portal/auth/request-otp', { method: 'POST', json: { phone } });
-    return { sentTo: phone };
-  }
-  await wait(400);
+  await api('/portal/auth/request-otp', { method: 'POST', json: { phone } });
   return { sentTo: phone };
 }
 
@@ -40,29 +27,22 @@ export async function verifyOtp(
   phone: string,
   code: string,
 ): Promise<{ ok: boolean; attemptsLeft?: number; profileComplete?: boolean; error?: string }> {
-  if (API_MODE) {
-    try {
-      const res = await api<{ accessToken: string; patient: Patient }>('/portal/auth/verify-otp', {
-        method: 'POST',
-        json: { phone, code },
-      });
-      setAccessToken(res.accessToken);
-      return { ok: true, profileComplete: !!res.patient.profileComplete };
-    } catch (e) {
-      if (e instanceof ApiError && (e.status === 401 || e.status === 400)) {
-        return { ok: false, error: e.message };
-      }
-      throw e;
+  try {
+    const res = await api<{ accessToken: string; patient: Patient }>('/portal/auth/verify-otp', {
+      method: 'POST',
+      json: { phone, code },
+    });
+    setAccessToken(res.accessToken);
+    return { ok: true, profileComplete: !!res.patient.profileComplete };
+  } catch (e) {
+    if (e instanceof ApiError && (e.status === 401 || e.status === 400)) {
+      return { ok: false, error: e.message };
     }
+    throw e;
   }
-  await wait(500);
-  // Demo rule: any 6 digits except all-zeros verifies.
-  const ok = /^\d{6}$/.test(code) && code !== '000000';
-  return { ok, attemptsLeft: ok ? 3 : 2, profileComplete: false };
 }
 
 export async function logoutSession(): Promise<void> {
-  if (!API_MODE) return;
   try {
     await api('/portal/auth/logout', { method: 'POST' });
   } finally {
@@ -73,13 +53,9 @@ export async function logoutSession(): Promise<void> {
 // --- Data -------------------------------------------------------------------
 
 export async function fetchPortal(): Promise<PortalData> {
-  if (API_MODE) {
-    const data = await api<PortalData>('/portal/bootstrap');
-    if (data.today) setToday(data.today);
-    return data;
-  }
-  await wait(LATENCY_MS);
-  return structuredClone(mockPortal);
+  const data = await api<PortalData>('/portal/bootstrap');
+  if (data.today) setToday(data.today);
+  return data;
 }
 
 /** DD / MM / YYYY (as typed in the profile form) → YYYY-MM-DD, or null. */

@@ -1,4 +1,4 @@
-import { TODAY } from '../data/mock';
+import { TODAY } from './today';
 import type { Appointment, Clinic, Doctor, ID, PortalData, RecordType } from '../types';
 import { timeToMinutes } from './format';
 

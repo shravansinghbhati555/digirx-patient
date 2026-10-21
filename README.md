@@ -4,7 +4,7 @@ Patient-facing portal for DigiRx clinics: book visits, manage appointments, see 
 
 It is phone-first, with tablet and desktop layouts. The UI is built from the **DigiRx Patient Portal** design canvas, all 45 artboards.
 
-It talks to the **existing DigiRx NestJS backend** (`../backend`), the same API and database the clinic app uses, through its `/portal/*` routes. With no API configured it runs on mock data, which is handy for UI work.
+It talks to the **existing DigiRx NestJS backend** (`../backend`), the same API and database the clinic app uses, through its `/portal/*` routes.
 
 ## Run it
 
@@ -14,11 +14,9 @@ npm run dev        # http://localhost:5174
 npm run build      # type-check + production build
 ```
 
-Sign in with any 10-digit mobile number. Any 6-digit OTP works except `000000`, which shows the error state.
+Copy `client/.env.example` to `client/.env` and point `VITE_API_BASE_URL` at the backend. Sign in with a patient's mobile number; the OTP is the one the backend sends (printed in the API log when SMS is not configured).
 
-The demo clock is fixed at **Tue 13 Oct 2026, 2 PM**, so "Tomorrow", "in 21 hours" and today's past slots match the designs. Change `TODAY` in `client/src/data/mock.ts`.
-
-State (bookings, cancellations, grants, payments) persists in `localStorage` under `digirx.patient.v1`. Log out from Profile to reset it.
+Only the signed-in session is kept in the browser. Records are loaded from the backend on each visit.
 
 ## Stack
 
@@ -39,11 +37,11 @@ Breakpoints are the `tablet:` and `desktop:` Tailwind screens. Tokens (colours, 
 ```
 client/src/
   types.ts               domain model (clinic, doctor, appointment, record, invoice, family grants…)
-  data/mock.ts           fixtures from the designs + TODAY
-  services/api.ts        API boundary: real /portal/* calls, or the mock when no API is set
+  lib/today.ts           clinic-local "today", set from the backend
+  services/api.ts        `/portal/*` calls against the DigiRx backend
   services/http.ts       token + refresh-cookie handling for the portal API
   state/portal.tsx       context + reducer: session, data, booking draft, all mutations
-  lib/                   dates/currency, availability (slot stand-in), selectors, .ics, share
+  lib/                   dates/currency, availability, selectors, .ics, share
   components/ui/         design system: Icon, Art (flowers/faces), Button, Bits, Overlay, Layout, States
   components/domain.tsx  mood picker, appointment/doctor/clinic cards, day & slot pickers, timeline item
   layouts/AppShell.tsx   auth gate + responsive nav (bottom nav / rail / sidebar)
@@ -74,10 +72,10 @@ client/src/
 The portal uses the backend's patient-portal API (`backend/src/modules/patient-portal`). It's off by default, so turn it on in both places:
 
 1. **Backend `.env`**: `PATIENT_PORTAL_ENABLED=true`, a `JWT_PORTAL_SECRET` (32+ characters, different from the staff secrets), and the portal origin in `CORS_ORIGINS` (dev: `http://localhost:5174`; prod: `https://patient.digirx.com`). Set `NOTIFICATION_PROVIDER=twilio` for real OTP SMS. With the default console provider, the code is printed in the backend log.
-2. **Each clinic opts in** through its settings: `PATCH /clinics/:id/settings` with `{ "portal": { "enabled": true, "bookingEnabled": true } }`. Optional fields: `bookableDoctorIds`, `maxAdvanceDays`, `cancellationLeadTimeHours`, `maxActiveFutureAppointments`.
+2. **Online booking** stays off until a clinic sets `portal.bookingEnabled` (`PATCH /clinics/:id/settings`). Seeing an existing chart does not require that switch: signing in with a number already stored on a clinic patient shows that chart.
 3. **Client**: copy `client/.env.example` to `client/.env` and set `VITE_API_BASE_URL`.
 
-How records reach a patient: after OTP login the patient enters a name and date of birth. Clinic records with the **same mobile number AND date of birth** are linked automatically. Records are never merged, and an ambiguous match is left unlinked. A child is added under Family with their own date of birth.
+How records reach a patient: after OTP login, every clinic chart stored with that mobile number is linked. A child added under Family is matched with the guardian's number and the child's date of birth.
 
 Access model:
 - Clinics see only their own records. A clinic sees records from other clinics only after the patient turns on sharing for it (Privacy, or "share past records" when booking). Staff read those through `GET /patients/:id/shared-records`.
