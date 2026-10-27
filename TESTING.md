@@ -85,7 +85,7 @@ cd "/c/Office Projects/DigiRx/DigiRx-Patient" && npm install
 ```
 
 ### Step 4: Point the patient portal at the backend
-Create the file `DigiRx-Patient/client/.env` with this one line:
+Create the file `DigiRx-Patient/.env` with this one line:
 ```env
 VITE_API_BASE_URL=http://localhost:4000
 ```
@@ -398,7 +398,7 @@ Expected: everything works exactly as before.
 | Problem | Fix |
 | --- | --- |
 | Setup script says **REFUSING TO RUN** | Your `backend/.env` points at the shared database. Redo Part 1, Step 2 |
-| Portal says "Can't reach DigiRx" | Window 1 (backend) isn't running, or `client/.env` is missing (Step 4) |
+| Portal says "Can't reach DigiRx" | Window 1 (backend) isn't running, or `.env` is missing (Step 4) |
 | Login code never appears | Look in window 1 for `[notify] SMS`. Check `NOTIFICATION_PROVIDER=console` |
 | "Too many codes requested" | Wait an hour, or reset (above) |
 | Downloads fail | Docker's `digirx_minio` must be running; run the reset again |

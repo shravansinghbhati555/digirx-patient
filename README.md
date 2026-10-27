@@ -14,7 +14,7 @@ npm run dev        # http://localhost:5174
 npm run build      # type-check + production build
 ```
 
-Copy `client/.env.example` to `client/.env` and point `VITE_API_BASE_URL` at the backend. Sign in with a patient's mobile number; the OTP is the one the backend sends (printed in the API log when SMS is not configured).
+Copy `.env.example` to `.env` and point `VITE_API_BASE_URL` at the backend. Sign in with a patient's mobile number; the OTP is the one the backend sends (printed in the API log when SMS is not configured).
 
 Only the signed-in session is kept in the browser. Records are loaded from the backend on each visit.
 
@@ -30,7 +30,7 @@ React 19 · Vite 8 · TypeScript (strict) · Tailwind 3 · React Router 7. This 
 | 768–1279 px (tablet) | 96 px icon rail | 2-column grids; sheets become centred dialogs |
 | ≥ 1280 px (desktop) | 240 px sidebar + top search bar | Max content 1240 px; 3-pane records; 3-column booking |
 
-Breakpoints are the `tablet:` and `desktop:` Tailwind screens. Tokens (colours, gradients, radii, shadows) live in `client/tailwind.config.js` and mirror the design system artboard.
+Breakpoints are the `tablet:` and `desktop:` Tailwind screens. Tokens (colours, gradients, radii, shadows) live in `tailwind.config.js` and mirror the design system artboard.
 
 ## Code map
 
@@ -73,7 +73,7 @@ The portal uses the backend's patient-portal API (`backend/src/modules/patient-p
 
 1. **Backend `.env`**: `PATIENT_PORTAL_ENABLED=true`, a `JWT_PORTAL_SECRET` (32+ characters, different from the staff secrets), and the portal origin in `CORS_ORIGINS` (dev: `http://localhost:5174`; prod: `https://patient.digirx.com`). Set `NOTIFICATION_PROVIDER=twilio` for real OTP SMS. With the default console provider, the code is printed in the backend log.
 2. **Online booking** stays off until a clinic sets `portal.bookingEnabled` (`PATCH /clinics/:id/settings`). Seeing an existing chart does not require that switch: signing in with a number already stored on a clinic patient shows that chart.
-3. **Client**: copy `client/.env.example` to `client/.env` and set `VITE_API_BASE_URL`.
+3. **Client**: copy `.env.example` to `.env` and set `VITE_API_BASE_URL`.
 
 How records reach a patient: after OTP login, every clinic chart stored with that mobile number is linked. A child added under Family is matched with the guardian's number and the child's date of birth.
 
