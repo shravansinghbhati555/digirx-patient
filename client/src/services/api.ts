@@ -18,10 +18,26 @@ export { ApiError } from './http';
 
 // --- Auth -------------------------------------------------------------------
 
-export async function requestOtp(phone: string): Promise<{ sentTo: string }> {
-  await api('/portal/auth/request-otp', { method: 'POST', json: { phone } });
-  return { sentTo: phone };
+
+export async function requestOtp(
+  phone: string,
+): Promise<{ sentTo: string; otp?: string; ttlSeconds?: number }> {
+  const res = await api<{
+    ok: boolean;
+    ttlSeconds: number;
+    otp?: string;
+  }>('/portal/auth/request-otp', {
+    method: 'POST',
+    json: { phone },
+  });
+
+  return {
+    sentTo: phone,
+    ttlSeconds: res.ttlSeconds,
+    ...(import.meta.env.DEV && res.otp ? { otp: res.otp } : {}),
+  };
 }
+
 
 export async function verifyOtp(
   phone: string,

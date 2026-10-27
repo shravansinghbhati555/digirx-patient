@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type FormEvent, type KeyboardEvent } from 'react';
-import { Link, Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Face, faces } from '../../components/ui/Art';
 import { ArrowButton, BackButton } from '../../components/ui/Button';
 import { Icon } from '../../components/ui/Icon';
@@ -14,11 +14,19 @@ const RESEND_SECONDS = 30;
 export function Otp() {
   const { state, actions } = usePortal();
   const navigate = useNavigate();
+  const location = useLocation();
+
+const routeOtp = (
+  location.state as { debugOtp?: string } | null
+)?.debugOtp;
   const [digits, setDigits] = useState<string[]>(() => Array(LENGTH).fill(''));
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
+  const [debugOtp, setDebugOtp] = useState(() =>
+  import.meta.env.DEV ? routeOtp ?? '' : ''
+);
 
   useEffect(() => {
     if (seconds <= 0) return;
@@ -48,15 +56,22 @@ export function Otp() {
     if (e.key === 'ArrowRight' && i < LENGTH - 1) inputs.current[i + 1]?.focus();
   };
 
-  const onPaste = (e: ClipboardEvent) => {
+  const onPaste = (e: ClipboardEvent<HTMLDivElement>) => {
     const text = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, LENGTH);
     if (!text) return;
     e.preventDefault();
     setDigits(Array.from({ length: LENGTH }, (_, i) => text[i] ?? ''));
+    setError('');
     inputs.current[Math.min(text.length, LENGTH - 1)]?.focus();
   };
 
-  const submit = async (e: FormEvent) => {
+  const useTestOtp = () => {
+    setDigits(Array.from({ length: LENGTH }, (_, i) => debugOtp[i] ?? ''));
+    setError('');
+    inputs.current[LENGTH - 1]?.focus();
+  };
+
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const code = digits.join('');
     if (code.length !== LENGTH) {
@@ -85,15 +100,26 @@ export function Otp() {
     navigate(res.profileComplete ? '/' : '/setup', { replace: true });
   };
 
-  const resend = async () => {
-    try {
-      await requestOtp(state.pendingPhone ?? '');
-      setError('');
-      setSeconds(RESEND_SECONDS);
-    } catch (err) {
-      setError(errorMessage(err));
+  
+const resend = async () => {
+  try {
+    const res = await requestOtp(state.pendingPhone ?? '');
+
+    console.log('OTP API response:', res);
+
+    if (import.meta.env.DEV && res.otp) {
+      setDebugOtp(String(res.otp));
+    } else {
+      setDebugOtp('');
     }
-  };
+
+    setError('');
+    setSeconds(RESEND_SECONDS);
+  } catch (err) {
+    setError(errorMessage(err));
+  }
+};
+
 
   return (
     <AuthFrame bg="bg-screen">
@@ -104,7 +130,7 @@ export function Otp() {
         <BackButton fallback="/login" />
 
         <div className="flex flex-col md:mx-auto md:mt-[90px] md:max-w-[1200px] md:flex-row md:items-start md:justify-center md:gap-6">
-          {/* First div: Heading and description */}
+          {/* Heading and description - original layout */}
           <div className="w-full md:mt-[45px] md:w-[30%]">
             <div className="relative mt-11 h-[88px] w-[88px] md:mt-0">
               <Face size={88} spec={faces.calm} rotate={-8} />
@@ -117,18 +143,18 @@ export function Otp() {
               Enter the 6-digit code
             </h1>
             <p className="m-0 mt-3 text-[15px] leading-[1.45] text-text-muted">
-              Sent by SMS to{" "}
+              Sent by SMS to{' '}
               <strong className="font-semibold text-ink">
                 {state.pendingPhone}
-              </strong>{" "}
-              ·{" "}
+              </strong>{' '}
+              ·{' '}
               <Link to="/login" className="font-medium underline">
                 Change
               </Link>
             </p>
           </div>
 
-          {/* Second div: OTP form and card */}
+          {/* OTP form - original layout */}
           <div className="w-full md:mt-8 md:w-[40%] md:rounded-2xl md:border md:border-gray-200 md:bg-white md:p-6 md:shadow-lg lg:p-8">
             <fieldset className="m-0 mt-8 border-0 p-0 md:mt-0">
               <legend className="sr-only">One-time password</legend>
@@ -141,7 +167,7 @@ export function Otp() {
                     }}
                     aria-label={`Digit ${i + 1}`}
                     inputMode="numeric"
-                    autoComplete={i === 0 ? "one-time-code" : "off"}
+                    autoComplete={i === 0 ? 'one-time-code' : 'off'}
                     maxLength={1}
                     value={d}
                     onChange={(e) => onChange(i, e.target.value)}
@@ -149,8 +175,8 @@ export function Otp() {
                     aria-invalid={!!error}
                     className={`h-[60px] w-12 min-w-0 flex-1 rounded-input text-center text-[24px] font-semibold outline-none transition-colors ${
                       error
-                        ? "border-2 border-danger bg-[#FFF5F5]"
-                        : "border border-white bg-surface focus:border-2 focus:border-ink md:border-2 md:border-gray-300 md:focus:border-ink md:focus:ring-2 md:focus:ring-gray-200"
+                        ? 'border-2 border-danger bg-[#FFF5F5]'
+                        : 'border border-white bg-surface focus:border-2 focus:border-ink md:border-2 md:border-gray-300 md:focus:border-ink md:focus:ring-2 md:focus:ring-gray-200'
                     }`}
                   />
                 ))}
@@ -168,9 +194,9 @@ export function Otp() {
             ) : seconds > 0 ? (
               <p className="m-0 mt-4 flex items-center gap-1.5 text-[14px] text-text-muted">
                 <Icon name="clock" size={18} />
-                Resend code in{" "}
+                Resend code{' '}
                 <strong className="font-semibold text-ink">
-                  0:{String(seconds).padStart(2, "0")}
+                  in 0:{String(seconds).padStart(2, '0')}
                 </strong>
               </p>
             ) : (
@@ -184,7 +210,7 @@ export function Otp() {
             )}
 
             <ArrowButton type="submit" wide className="mt-9" disabled={busy}>
-              {busy ? "Verifying…" : "Verify & continue"}
+              {busy ? 'Verifying…' : 'Verify & continue'}
             </ArrowButton>
 
             <div className="mt-7 flex items-start gap-3 rounded-[20px] bg-surface/60 px-4 py-3.5 md:border md:border-gray-100 md:bg-gray-50">
@@ -196,8 +222,32 @@ export function Otp() {
             </div>
           </div>
 
-          {/* Third div: Empty space */}
-          <div className="hidden md:block md:w-[10%]"></div>
+          {/* Test OTP - phone/heading se upar */}
+           {import.meta.env.DEV && (
+  <div className="order-first mb-4 w-full md:order-none md:mb-0 md:w-[20%] md:pt-8">
+    <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 md:flex-col md:items-start md:p-4">
+      <div className="flex items-center gap-2 md:flex-col md:items-start">
+        <span className="text-xs font-medium text-blue-800">
+          Test OTP
+        </span>
+        <span className="text-lg font-bold tracking-[0.15em] text-blue-950 md:mt-1 md:text-2xl">
+          {debugOtp || '------'}
+        </span>
+      </div>
+
+      {debugOtp && (
+        <button
+          type="button"
+          onClick={useTestOtp}
+          className="shrink-0 rounded-lg bg-blue-700 px-3 py-1.5 text-xs font-semibold text-white"
+        >
+          Use OTP
+        </button>
+      )}
+    </div>
+  </div>
+)}
+
         </div>
       </form>
     </AuthFrame>

@@ -111,7 +111,7 @@ export function Help() {
         </Button>
         <a href={`tel:${clinicPhone}`} className="flex h-[52px] flex-1 items-center justify-center gap-2 rounded-full bg-surface text-[15px] font-semibold">
           <Icon name="phone" size={18} />
-          Call clinic
+          Helpline Number
         </a>
       </div>
       <span className="mt-3.5 rounded-[16px] bg-bad-bg px-3.5 py-3 text-[13px] font-medium leading-[1.4] text-[#7E1717]">

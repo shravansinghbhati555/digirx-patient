@@ -24,24 +24,35 @@ export function Login() {
   if (state.session)
     return <Navigate to={state.session.profileDone ? "/" : "/setup"} replace />;
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (phone.length !== 10) {
-      setError("Enter your 10-digit mobile number.");
-      return;
-    }
-    setBusy(true);
-    const full = `+91 ${pretty(phone)}`;
-    try {
-      await requestOtp(full);
-    } catch (err) {
-      setBusy(false);
-      setError(errorMessage(err));
-      return;
-    }
+  
+const submit = async (e: FormEvent) => {
+  e.preventDefault();
+
+  if (phone.length !== 10) {
+    setError("Enter your 10-digit mobile number.");
+    return;
+  }
+
+  setBusy(true);
+  const full = `+91 ${pretty(phone)}`;
+
+  try {
+    const res = await requestOtp(full);
+
     actions.startLogin(full);
-    navigate("/otp");
-  };
+
+    navigate("/otp", {
+      state: {
+        debugOtp: import.meta.env.DEV ? res.otp : undefined,
+      },
+    });
+  } catch (err) {
+    setError(errorMessage(err));
+  } finally {
+    setBusy(false);
+  }
+};
+
 
   return (
     <AuthFrame bg="bg-login">

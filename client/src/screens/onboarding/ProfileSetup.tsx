@@ -284,66 +284,6 @@ function ProfileForm({
             </div>
           </div>
         </div>
-
-        <label className="label mb-2 mt-4 block" htmlFor="name">
-          Full name
-        </label>
-        <input id="name" className="field" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" />
-
-        <label className="label mb-2 mt-4 block" htmlFor="dob">
-          Date of birth
-        </label>
-        <input
-          id="dob"
-          className="field disabled:opacity-60"
-          value={dob}
-          onChange={(e) => setDob(e.target.value)}
-          placeholder="DD / MM / YYYY"
-          inputMode="numeric"
-          disabled={!!p.dobLocked}
-          aria-describedby={p.dobLocked ? 'dob-locked' : undefined}
-        />
-        {p.dobLocked && (
-          <span id="dob-locked" className="mt-1.5 block text-[12px] text-text-muted">
-            Linked to your clinic records. Ask your clinic to correct it.
-          </span>
-        )}
-
-        <span className="label mb-2 mt-4 block" id="gender-l">
-          Gender
-        </span>
-        <div className="flex gap-2" role="group" aria-labelledby="gender-l">
-          {GENDERS.map((g) => (
-            <Chip key={g} size="lg" surface="solid" on={gender === g} onClick={() => setGender(g)}>
-              {g}
-            </Chip>
-          ))}
-        </div>
-
-        <span className="label mb-2 mt-4 block" id="blood-l">
-          Blood group <span className="font-normal text-text-muted">(optional)</span>
-        </span>
-        <div className="flex flex-wrap gap-2" role="group" aria-labelledby="blood-l">
-          {BLOOD.map((b) => (
-            <Chip key={b} size="lg" surface="solid" on={blood === b} onClick={() => setBlood(blood === b ? '' : b)}>
-              {b}
-            </Chip>
-          ))}
-        </div>
-
-        <label className="label mb-2 mt-4 block" htmlFor="email">
-          Email <span className="font-normal text-text-muted">(for invoices)</span>
-        </label>
-        <input
-          id="email"
-          type="email"
-          className="field"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@example.com"
-          autoComplete="email"
-        />
-
         {error && (
           <p
             role="alert"
@@ -354,9 +294,15 @@ function ProfileForm({
           </p>
         )}
 
-        <ArrowButton type="submit" wide className="mt-[26px]" disabled={busy}>
-          {editing ? 'Save changes' : 'Continue'}
-        </ArrowButton>
+        <div className="mt-4 flex justify-end">
+          <ArrowButton
+            type="submit"
+            className="w-auto px-5"
+            disabled={busy}
+           >
+           {editing ? 'Save changes' : 'Continue'}
+          </ArrowButton>
+        </div>
       </form>
     </AuthFrame>
   );
