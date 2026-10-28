@@ -2,8 +2,8 @@ import type { ReactNode } from "react";
 import { BackButton } from "./Button";
 
 const widths = {
-  // narrow: "tablet:max-w-[600px]",
-  // medium: "tablet:max-w-[880px]",
+  narrow: "tablet:max-w-[600px]",
+  medium: "tablet:max-w-[880px]",
   wide: "max-w-[1240px]",
 };
 
