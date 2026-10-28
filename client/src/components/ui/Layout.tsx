@@ -2,8 +2,9 @@ import type { ReactNode } from "react";
 import { BackButton } from "./Button";
 
 const widths = {
-  narrow: "tablet:max-w-[600px]",
-  medium: "tablet:max-w-[880px]",
+  // No cap: these screens use the full width (layout from shravan-27-oct).
+  narrow: "",
+  medium: "",
   wide: "max-w-[1240px]",
 };
 
