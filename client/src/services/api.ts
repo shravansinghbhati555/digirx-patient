@@ -34,7 +34,8 @@ export async function requestOtp(
   return {
     sentTo: phone,
     ttlSeconds: res.ttlSeconds,
-    ...(import.meta.env.DEV && res.otp ? { otp: res.otp } : {}),
+    // The backend only includes `otp` when it isn't running in production.
+    ...(res.otp ? { otp: String(res.otp) } : {}),
   };
 }
 

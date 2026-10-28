@@ -24,9 +24,7 @@ const routeOtp = (
   const [busy, setBusy] = useState(false);
   const [seconds, setSeconds] = useState(RESEND_SECONDS);
   const inputs = useRef<(HTMLInputElement | null)[]>([]);
-  const [debugOtp, setDebugOtp] = useState(() =>
-  import.meta.env.DEV ? routeOtp ?? '' : ''
-);
+  const [debugOtp, setDebugOtp] = useState(routeOtp ?? '');
 
   useEffect(() => {
     if (seconds <= 0) return;
@@ -105,13 +103,7 @@ const resend = async () => {
   try {
     const res = await requestOtp(state.pendingPhone ?? '');
 
-    console.log('OTP API response:', res);
-
-    if (import.meta.env.DEV && res.otp) {
-      setDebugOtp(String(res.otp));
-    } else {
-      setDebugOtp('');
-    }
+    setDebugOtp(res.otp ?? '');
 
     setError('');
     setSeconds(RESEND_SECONDS);
@@ -223,7 +215,7 @@ const resend = async () => {
           </div>
 
           {/* Test OTP - phone/heading se upar */}
-           {import.meta.env.DEV && (
+           {debugOtp && (
   <div className="order-first mb-4 w-full md:order-none md:mb-0 md:w-[20%] md:pt-8">
     <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 md:flex-col md:items-start md:p-4">
       <div className="flex items-center gap-2 md:flex-col md:items-start">

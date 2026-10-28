@@ -43,7 +43,7 @@ const submit = async (e: FormEvent) => {
 
     navigate("/otp", {
       state: {
-        debugOtp: import.meta.env.DEV ? res.otp : undefined,
+        debugOtp: res.otp,
       },
     });
   } catch (err) {

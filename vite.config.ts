@@ -8,6 +8,8 @@ export default defineConfig({
   root: 'client',
   envDir: '..',
   build: { outDir: '../dist', emptyOutDir: true },
-  server: { port: 5174 },
+  server: { port: 5174,
+    allowedHosts: ["digirx-patient.abhianand.in"],
+   },
   preview: { port: 4174, strictPort: true },
 });
