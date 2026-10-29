@@ -102,7 +102,7 @@ function ProfileForm({
       <form
         onSubmit={submit}
         noValidate
-        className="flex flex-col px-6 pb-10 pt-[max(24px,env(safe-area-inset-top))] lg:mx-auto lg:w-full lg:max-w-5xl lg:px-10"
+        className="flex flex-col px-6 pb-10 pt-[max(24px,env(safe-area-inset-top))] lg:mx-auto lg:w-full lg:px-10"
       >
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -206,11 +206,25 @@ function ProfileForm({
 
             <input
               id="dob"
+              type="date"
               className="field w-full"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              placeholder="DD / MM / YYYY"
-              inputMode="numeric"
+              value={dobToIso(dob) || ''}
+              max={new Date().toISOString().split('T')[0]}
+              onChange={(e) => {
+                const isoDate = e.target.value;
+
+                if (!isoDate) {
+                 setDob('');
+                 setError('');
+                 return;
+                }
+
+                const [year, month, day] = isoDate.split('-');
+
+                setDob(`${day} / ${month} / ${year}`)
+                setError('');
+              }}
+              autoComplete="bday"
             />
           </div>
 

@@ -48,7 +48,6 @@ function applyDoctors(d: PortalData, q: string, speciality: string | null, f: Fi
   const needle = q.trim().toLowerCase();
   const limit = f.when === 'today' ? TODAY : f.when === 'tomorrow' ? addDays(TODAY, 1) : f.when === 'week' ? addDays(TODAY, 6) : null;
   return d.doctors
-    .filter((doc) => doc.bookable !== false)
     .map((doc) => {
       const cid = doc.clinics.find((c) => f.clinics.includes(c.clinicId))?.clinicId;
       return { doc, cid, next: cid ? nextAvailable(doc, cid, d.appointments) : null };
