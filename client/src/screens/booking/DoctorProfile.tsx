@@ -22,13 +22,8 @@ export function DoctorProfile() {
   const startBooking = useStartBooking();
   const [saved, setSaved] = useState(false);
   const doctor = doctorById(data, id);
-  console.log('Experience field:', doctor.years);
-  console.log('Fee field:', doctor.fee);
-  console.log('Languages field:', doctor.languages);
-
-  console.log('All doctor fields:', Object.keys(doctor));
-  console.log('Complete doctor data:', JSON.stringify(doctor, null, 2));
-  if (!doctor) return <NotFound />;
+   
+  if (!doctor) return <NotFound />
 
   const clinicId = doctor.clinics.find((c) => c.clinicId === params.get('clinic'))?.clinicId ?? doctor.clinics[0].clinicId;
   const clinic = clinicById(data, clinicId)!;
