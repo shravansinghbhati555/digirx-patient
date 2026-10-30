@@ -114,9 +114,32 @@ export function AddFamily() {
         {mode === 'child' ? (
           <>
             <label className="label mb-2 mt-4 block" htmlFor="fdob">
-              Date of birth
+                Date of birth
             </label>
-            <input id="fdob" className="field" value={dob} onChange={(e) => setDob(e.target.value)} placeholder="DD / MM / YYYY" inputMode="numeric" />
+
+            <input
+             id="fdob"
+             type="date"
+             className="field w-full"
+             value={dobToIso(dob) || ''}
+             max={new Date().toISOString().split('T')[0]}
+             onChange={(e) => {
+               const isoDate = e.target.value;
+
+              if (!isoDate) {
+               setDob('');
+               setError('');
+               return;
+              }
+
+              const [year, month, day] = isoDate.split('-');
+
+              setDob(`${day} / ${month} / ${year}`);
+              setError('');
+            }}
+               autoComplete="bday"
+            />
+
             <span className="mt-2.5 block text-[12px] leading-[1.45] text-text-muted">
               {first ? `When ${first} turns 18, they'll` : "At 18 they'll"} be asked to take over their own account.
             </span>
