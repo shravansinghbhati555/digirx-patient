@@ -8,9 +8,9 @@ import { usePortalData } from '../../state/portal';
 
 const TOPICS: { label: string; icon: IconName; bg: string; ink?: boolean; tag: string }[] = [
   { label: 'Bookings', icon: 'calendar', bg: '#181818', ink: true, tag: 'booking' },
-  { label: 'Records & reports', icon: 'file', bg: '#FFA7DC', tag: 'records' },
+  { label: 'Records & reports', icon: 'file', bg: '#FF8F8F', tag: 'records' },
   { label: 'Family access', icon: 'family', bg: '#C9B2FF', tag: 'family' },
-  { label: 'Payments', icon: 'receipt', bg: '#FFB690', tag: 'payments' },
+  { label: 'Payments', icon: 'receipt', bg: '#FFC2A8', tag: 'payments' },
 ];
 
 const FAQS: { q: string; a: string; tag: string }[] = [

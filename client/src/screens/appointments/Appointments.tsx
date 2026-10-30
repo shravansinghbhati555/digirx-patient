@@ -170,7 +170,7 @@ function PastCard({ appt, data }: { appt: Appointment; data: PortalData }) {
         <Tag tone={tag.tone}>{tag.label}</Tag>
       </span>
       <Link to={`/appointments/${appt.id}`} className="flex items-center gap-3">
-        <Avatar initials={doctor?.initials ?? clinic?.initials ?? '?'} color={doctor?.color ?? clinic?.color ?? '#F6EEF3'} size={42} textSize={13} />
+        <Avatar initials={doctor?.initials ?? clinic?.initials ?? '?'} color={doctor?.color ?? clinic?.color ?? '#F7EFEE'} size={42} textSize={13} />
         <span className="flex flex-1 flex-col">
           <span className="text-[16px] font-semibold">{appt.title}</span>
           <span className="text-[13px] text-text-caption">{sub || clinic?.name}</span>

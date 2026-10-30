@@ -67,10 +67,10 @@ export function Profile() {
 
       <h2 className="section-label mb-2 mt-5">Account</h2>
       <div className="card px-4">
-        <Item to="/setup" icon="user" bg="#FFE6D8">
+        <Item to="/setup" icon="user" bg="#FFE8DF">
           Personal &amp; health details
         </Item>
-        <Item to="/discover" icon="building" bg="#FFE0F2" value={String(myClinics)}>
+        <Item to="/discover" icon="building" bg="#FFE2E0" value={String(myClinics)}>
           My DigiRx clinics
         </Item>
         <Item to="/billing" icon="receipt" bg="#ECE3FF">
@@ -80,7 +80,7 @@ export function Profile() {
 
       <h2 className="section-label mb-2 mt-5">Preferences</h2>
       <div className="card px-4">
-        <Item to="/notifications" icon="bell" bg="#FFE6D8" value="SMS, push">
+        <Item to="/notifications" icon="bell" bg="#FFE8DF" value="SMS, push">
           Notifications
         </Item>
         <Item icon="globe" bg="#DCEBFF" value={language} onClick={() => setLangOpen(true)}>

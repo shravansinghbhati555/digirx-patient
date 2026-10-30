@@ -6,7 +6,7 @@ type Variant = 'primary' | 'secondary' | 'danger' | 'dangerSoft' | 'light' | 'gl
 type Size = 'lg' | 'md' | 'sm' | 'xs';
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-ink text-surface',
+  primary: 'bg-rx-600 text-surface',
   secondary: 'bg-tint text-ink',
   danger: 'bg-danger text-surface',
   dangerSoft: 'bg-bad-bg text-bad-fg',
@@ -59,20 +59,20 @@ export function Button({ children, variant = 'primary', size = 'lg', icon, block
 }
 
 interface ArrowProps extends Omit<ButtonProps, 'icon' | 'size' | 'variant'> {
-  /** Trailing glyph inside the pink circle. */
+  /** Trailing glyph inside the circle. */
   glyph?: 'arrow' | 'check';
   /** `wide` = full-width bar CTA (label left, circle right). */
   wide?: boolean;
-  tone?: 'ink' | 'glass';
+  tone?: 'red' | 'glass';
 }
 
-/** Signature CTA: near-black pill with a pink arrow circle. */
-export function ArrowButton({ children, glyph = 'arrow', wide, tone = 'ink', className = '', to, state, replace, ...rest }: ArrowProps) {
+/** Signature CTA: DigiRx-red pill with an off-white arrow circle. */
+export function ArrowButton({ children, glyph = 'arrow', wide, tone = 'red', className = '', to, state, replace, ...rest }: ArrowProps) {
   const base =
-    tone === 'ink'
-      ? 'bg-ink text-surface'
+    tone === 'red'
+      ? 'bg-rx-600 text-surface'
       : 'bg-surface/70 text-ink border border-white/90';
-  const circle = tone === 'ink' ? 'bg-pink text-ink' : 'bg-ink text-surface';
+  const circle = tone === 'red' ? 'bg-surface text-rx-600' : 'bg-rx-600 text-surface';
   const cls = wide
     ? `flex h-[58px] w-full items-center justify-between rounded-full pl-6 pr-2 text-[16px] font-semibold ${base} ${className}`
     : `inline-flex h-[56px] items-center gap-3 rounded-full pl-[22px] pr-2 text-[15px] font-semibold ${base} ${className}`;

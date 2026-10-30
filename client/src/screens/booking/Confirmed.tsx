@@ -22,7 +22,7 @@ export function Confirmed() {
   return (
     <div className="relative min-h-dvh overflow-hidden bg-celebrate">
       <Flower size={120} color="#FDFCFB" bold={false} className="absolute -left-[30px] top-[70px] -rotate-[16deg]" />
-      <Flower size={84} color="#B48CF5" bold={false} className="absolute right-2.5 top-[260px] rotate-[20deg]" />
+      <Flower size={84} color="#FFD3CB" bold={false} className="absolute right-2.5 top-[260px] rotate-[20deg]" />
 
       <div className="relative mx-auto flex max-w-[460px] flex-col items-center px-6 pb-16 pt-[92px]">
         <FlowerFace size={190} face={faces.laughing} badge="check" />
@@ -44,7 +44,7 @@ export function Confirmed() {
               Confirmed
             </Tag>
           </div>
-          <div className="flex items-center gap-3 border-t-[1.5px] border-dashed border-[#EADCE4] pt-3">
+          <div className="flex items-center gap-3 border-t-[1.5px] border-dashed border-[#EBDDDA] pt-3">
             {doctor && <Avatar initials={doctor.initials} color={doctor.color} size={40} />}
             <span className="flex flex-1 flex-col">
               <span className="text-[15px] font-medium">{doctor?.name}</span>

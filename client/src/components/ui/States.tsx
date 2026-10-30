@@ -10,7 +10,7 @@ export function EmptyState({
   body,
   action,
   face = faces.sleepy,
-  flower = '#F0679F',
+  flower = '#EE2B2B',
 }: {
   title: string;
   body: string;
@@ -75,7 +75,7 @@ export function ErrorState({
 }) {
   return (
     <div className="flex flex-col items-center py-10 text-center">
-      <FlowerFace size={170} flowerColor="#C9B2FF" face={faces.upset} faceRotate={-8} />
+      <FlowerFace size={170} flowerColor="#FFC2A8" face={faces.upset} faceRotate={-8} />
       <h1 className="m-0 mt-[22px] text-[26px] font-semibold leading-[1.15] tracking-[-0.02em]">{title}</h1>
       <p className="m-0 mt-2 max-w-[300px] text-[15px] leading-[1.45] text-text-muted">{body}</p>
       <div className="mt-5 flex gap-2.5">

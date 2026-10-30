@@ -71,8 +71,8 @@ export function cancelled(d: PortalData): Appointment[] {
 }
 
 export const recordTypes: Record<RecordType, { label: string; plural: string; bg: string }> = {
-  visit: { label: 'Visit', plural: 'Visits', bg: '#FFE6D8' },
-  lab: { label: 'Lab report', plural: 'Lab reports', bg: '#FFE0F2' },
+  visit: { label: 'Visit', plural: 'Visits', bg: '#FFE8DF' },
+  lab: { label: 'Lab report', plural: 'Lab reports', bg: '#FFE2E0' },
   rx: { label: 'Prescription', plural: 'Prescriptions', bg: '#FFF1D6' },
   vax: { label: 'Vaccine', plural: 'Vaccines', bg: '#DDF3E4' },
 };

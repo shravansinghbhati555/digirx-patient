@@ -35,7 +35,7 @@ function recentActivity(d: PortalData): Activity[] {
     out.push({
       to: `/reports/${report.id}`,
       icon: 'flask',
-      bg: '#FFE0F2',
+      bg: '#FFE2E0',
       title: `${report.shortName ?? report.title} report added`,
       sub: `${clinicById(d, report.clinicId)?.name ?? 'Uploaded by you'} · ${ago(report.date)}`,
       isNew: report.isNew,
@@ -43,7 +43,7 @@ function recentActivity(d: PortalData): Activity[] {
   }
   const rx = [...d.prescriptions].sort((a, b) => b.date.localeCompare(a.date))[0];
   if (rx) {
-    out.push({ to: `/prescriptions/${rx.id}`, icon: 'pill', bg: '#FFE6D8', title: 'New prescription', sub: `${doctorById(d, rx.doctorId)?.name} · ${dayMonth(rx.date)}` });
+    out.push({ to: `/prescriptions/${rx.id}`, icon: 'pill', bg: '#FFE8DF', title: 'New prescription', sub: `${doctorById(d, rx.doctorId)?.name} · ${dayMonth(rx.date)}` });
   }
   const paid = d.invoices.filter((i) => i.status === 'paid').sort((a, b) => (b.paidOn ?? '').localeCompare(a.paidOn ?? ''))[0];
   if (paid) {
@@ -54,8 +54,8 @@ function recentActivity(d: PortalData): Activity[] {
 
 const quick: { to: string; label: string; icon: IconName; bg: string; ink?: boolean; sub: (d: PortalData) => string }[] = [
   { to: '/discover', label: 'Book', icon: 'calendarPlus', bg: '#181818', ink: true, sub: (d) => `${d.clinics.length} clinics nearby` },
-  { to: '/reports', label: 'Reports', icon: 'file', bg: '#FFA7DC', sub: (d) => `${d.reports.filter((r) => r.isNew).length || 'No'} new` },
-  { to: '/prescriptions', label: 'Medicines', icon: 'pill', bg: '#FFB690', sub: (d) => plural(d.prescriptions.filter((p) => p.active).length, 'active course') },
+  { to: '/reports', label: 'Reports', icon: 'file', bg: '#FF8F8F', sub: (d) => `${d.reports.filter((r) => r.isNew).length || 'No'} new` },
+  { to: '/prescriptions', label: 'Medicines', icon: 'pill', bg: '#FFC2A8', sub: (d) => plural(d.prescriptions.filter((p) => p.active).length, 'active course') },
   { to: '/records', label: 'History', icon: 'clock', bg: '#C9B2FF', sub: (d) => plural(d.records.length, 'record') },
 ];
 
@@ -167,7 +167,7 @@ export function Home() {
               </Link>
             ))}
             <Link to="/family/add" aria-label="Add family member" className="flex w-16 flex-col items-center gap-1.5">
-              <span className="flex h-[58px] w-[58px] items-center justify-center rounded-[20px] border-[1.5px] border-dashed border-[#B7A9B5] bg-surface/70">
+              <span className="flex h-[58px] w-[58px] items-center justify-center rounded-[20px] border-[1.5px] border-dashed border-[#B9A9A6] bg-surface/70">
                 <Icon name="plus" />
               </span>
               <span className="text-[12px] font-medium">Add</span>
@@ -188,7 +188,7 @@ export function Home() {
               );
             })}
             <Link to="/family/add" className="row !py-3.5">
-              <span className="flex h-11 w-11 items-center justify-center rounded-[15px] border-[1.5px] border-dashed border-[#B7A9B5]">
+              <span className="flex h-11 w-11 items-center justify-center rounded-[15px] border-[1.5px] border-dashed border-[#B9A9A6]">
                 <Icon name="plus" />
               </span>
               <span className="text-[15px] font-medium">Add a member</span>

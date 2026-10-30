@@ -62,7 +62,7 @@ export function ReportPreview() {
               Report: {r.reportedAt}
             </span>
           </div>
-          <div className="flex justify-between rounded-[10px] bg-[#F8F3F6] px-2.5 py-2 text-[11px]">
+          <div className="flex justify-between rounded-[10px] bg-[#F9F4F3] px-2.5 py-2 text-[11px]">
             <span>
               {p.name} · {p.gender[0]} · {p.age} y
             </span>
@@ -72,7 +72,7 @@ export function ReportPreview() {
             <thead>
               <tr>
                 {['Test', 'Result', 'Range'].map((h) => (
-                  <th key={h} className="border-b border-[#EADCE4] px-1 py-1.5 text-left text-[11px] font-semibold text-text-caption">
+                  <th key={h} className="border-b border-[#EBDDDA] px-1 py-1.5 text-left text-[11px] font-semibold text-text-caption">
                     {h}
                   </th>
                 ))}
@@ -80,7 +80,7 @@ export function ReportPreview() {
             </thead>
             <tbody>
               {r.results.map((x) => (
-                <tr key={x.test} className="border-b border-[#F4ECF0] last:border-0">
+                <tr key={x.test} className="border-b border-[#F5EDEB] last:border-0">
                   <td className="px-1 py-2">{x.test}</td>
                   <td className="px-1 py-2 font-semibold">
                     {x.result}{' '}
@@ -94,9 +94,9 @@ export function ReportPreview() {
           {r.verifiedBy && <span className="text-[10px] text-text-caption">Electronically verified · {r.verifiedBy}</span>}
         </div>
       ) : (
-        <div className="mt-3.5 flex h-[420px] flex-col items-center justify-center gap-3 rounded-[20px] bg-white text-center shadow-paper" style={{ background: r.category === 'imaging' ? '#1F1B24' : undefined }}>
-          <Icon name="file" size={40} className={r.category === 'imaging' ? 'text-[#8F8499]' : 'text-text-faint'} />
-          <span className={`text-[13px] ${r.category === 'imaging' ? 'text-[#C9BFD0]' : 'text-text-muted'}`}>[Document preview — rendered from the stored file]</span>
+        <div className="mt-3.5 flex h-[420px] flex-col items-center justify-center gap-3 rounded-[20px] bg-white text-center shadow-paper" style={{ background: r.category === 'imaging' ? '#1F1B1B' : undefined }}>
+          <Icon name="file" size={40} className={r.category === 'imaging' ? 'text-[#8F8786]' : 'text-text-faint'} />
+          <span className={`text-[13px] ${r.category === 'imaging' ? 'text-[#CFC6C4]' : 'text-text-muted'}`}>[Document preview — rendered from the stored file]</span>
         </div>
       )}
       <span className="mt-3 self-center rounded-full bg-surface/75 px-3 py-[5px] text-[12px] font-medium">Page 1 of {r.pages}</span>

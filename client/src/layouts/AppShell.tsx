@@ -209,7 +209,7 @@ export function AppShell() {
   return (
     <div className="flex min-h-dvh desktop:bg-screen-wide">
       <Sidebar path={pathname} />
-      <Rail path={pathname} initials={patient?.initials ?? '··'} color={patient?.color ?? '#FFB690'} />
+      <Rail path={pathname} initials={patient?.initials ?? '··'} color={patient?.color ?? '#FFC2A8'} />
       <div className="flex min-w-0 flex-1 flex-col">
         {patient && data && (
           <DesktopTopBar name={patient.name} initials={patient.initials} color={patient.color} unread={unreadCount(data)} />

@@ -102,7 +102,7 @@ export function VisitDetail() {
           <div className="card mt-2.5 px-4 py-1">
             {rx && (
               <Link to={`/prescriptions/${rx.id}`} className="row">
-                <IconTile icon="pill" bg="#FFE6D8" />
+                <IconTile icon="pill" bg="#FFE8DF" />
                 <span className="flex flex-1 flex-col">
                   <span className="text-[15px] font-medium">Prescription · {rx.medicines.length} medicines</span>
                   <span className="text-[12px] text-text-caption">{rx.id}</span>
@@ -112,7 +112,7 @@ export function VisitDetail() {
             )}
             {report && (
               <Link to={`/reports/${report.id}`} className="row">
-                <IconTile icon="flask" bg="#FFE0F2" />
+                <IconTile icon="flask" bg="#FFE2E0" />
                 <span className="flex flex-1 flex-col">
                   <span className="text-[15px] font-medium">Lab order · {report.shortName ?? report.title}</span>
                   <span className="text-[12px] text-text-caption">Result ready · {fullDate(report.date).replace(/ \d{4}$/, '')}</span>

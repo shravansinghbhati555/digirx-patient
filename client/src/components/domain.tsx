@@ -91,13 +91,13 @@ export function NextVisitCard({ appt, data, large }: { appt: Appointment; data: 
   );
 }
 
-const dateTint = ['#ECE3FF', '#FFE6D8', '#DCEBFF', '#FFE0F2'];
+const dateTint = ['#ECE3FF', '#FFE8DF', '#DCEBFF', '#FFE2E0'];
 
 /** Compact list card with a date block. */
 export function AppointmentRow({ appt, data, index = 0 }: { appt: Appointment; data: PortalData; index?: number }) {
   const doctor = doctorById(data, appt.doctorId);
   const tag = statusTag(appt);
-  const forTone = appt.patientId === data.patient.id ? '#FFE6D8' : (data.family.find((m) => m.id === appt.patientId)?.color ?? '#DCEBFF');
+  const forTone = appt.patientId === data.patient.id ? '#FFE8DF' : (data.family.find((m) => m.id === appt.patientId)?.color ?? '#DCEBFF');
   return (
     <Link to={`/appointments/${appt.id}`} className="card flex items-center gap-3.5 p-3.5">
       <span className="flex h-[68px] w-[60px] flex-none flex-col items-center justify-center rounded-[18px]" style={{ background: dateTint[index % dateTint.length] }}>
@@ -212,7 +212,7 @@ export function DayPicker({ days, value, onChange, wrap, tintOnDesktop }: { days
           >
             <span className="text-[12px] font-medium">{dow(d.date)}</span>
             <span className={`text-[20px] font-semibold ${d.open ? '' : 'line-through'}`}>{dayNum(d.date)}</span>
-            <span className={`h-[5px] w-[5px] rounded-full ${on ? 'bg-pink' : d.open ? 'bg-flower' : ''}`} />
+            <span className={`h-[5px] w-[5px] rounded-full ${on ? 'bg-rx' : d.open ? 'bg-flower' : ''}`} />
           </button>
         );
       })}
@@ -263,7 +263,7 @@ export function SlotGrid({
                       on
                         ? 'bg-ink text-surface'
                         : isCurrent
-                          ? 'bg-wash-rose shadow-[inset_0_0_0_1.5px_#F0679F]'
+                          ? 'bg-wash-rose shadow-[inset_0_0_0_1.5px_#EE2B2B]'
                           : s.booked
                             ? 'border-[1.5px] border-dashed border-slotline text-text-faint line-through'
                             : `border border-white bg-surface ${tintOnDesktop ? 'desktop:border-tint desktop:bg-tint' : ''}`
@@ -293,7 +293,7 @@ export function SlotLegend() {
         Selected
       </span>
       <span className="flex items-center gap-1.5">
-        <span className="h-3.5 w-3.5 rounded-full border-[1.5px] border-dashed border-[#C9B8C4]" />
+        <span className="h-3.5 w-3.5 rounded-full border-[1.5px] border-dashed border-[#CBB9B5]" />
         Booked
       </span>
     </div>

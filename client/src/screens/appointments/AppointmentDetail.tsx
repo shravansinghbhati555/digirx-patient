@@ -101,7 +101,7 @@ export function AppointmentDetail() {
 
       <div className="card mt-3.5 px-4 py-1">
         <div className="row">
-          <Avatar initials={who?.initials ?? '?'} color={who?.color ?? '#F6EEF3'} size={42} textSize={13} />
+          <Avatar initials={who?.initials ?? '?'} color={who?.color ?? '#F7EFEE'} size={42} textSize={13} />
           <span className="flex flex-1 flex-col">
             <span className="text-[12px] text-text-caption">Patient</span>
             <span className="text-[15px] font-medium">{patientLabel(data, appt.patientId)}</span>

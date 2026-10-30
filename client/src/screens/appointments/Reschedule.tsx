@@ -113,8 +113,8 @@ export function Reschedule() {
                   setTime('');
                 }}
                 className={`flex h-[42px] items-center justify-center rounded-btn text-[15px] font-medium ${
-                  sel ? 'bg-ink font-semibold text-surface' : open ? 'bg-wash-rose' : 'text-[#A99AA6] line-through'
-                } ${cur && !sel ? 'shadow-[inset_0_0_0_1.5px_#F0679F]' : ''}`}
+                  sel ? 'bg-ink font-semibold text-surface' : open ? 'bg-wash-rose' : 'text-[#8F8786] line-through'
+                } ${cur && !sel ? 'shadow-[inset_0_0_0_1.5px_#EE2B2B]' : ''}`}
               >
                 {dayNum(d)}
               </button>
@@ -123,11 +123,11 @@ export function Reschedule() {
         </div>
         <div className="mt-3 flex flex-wrap gap-3.5 text-[12px] text-text-muted">
           <span className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-[4px] border border-[#F3D3E4] bg-wash-rose" />
+            <span className="h-3 w-3 rounded-[4px] border border-[#F0E4E1] bg-wash-rose" />
             Has slots
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="h-3 w-3 rounded-[4px] shadow-[inset_0_0_0_1.5px_#F0679F]" />
+            <span className="h-3 w-3 rounded-[4px] shadow-[inset_0_0_0_1.5px_#EE2B2B]" />
             Current
           </span>
           <span className="flex items-center gap-1.5">

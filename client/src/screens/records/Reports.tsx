@@ -26,8 +26,8 @@ function Thumb({ r, label }: { r: Report; label: string }) {
     return (
       <span className="relative block h-[120px] overflow-hidden rounded-[16px]" style={{ background: r.thumb }}>
         <svg width="100%" height="120" viewBox="0 0 160 120" aria-hidden="true" preserveAspectRatio="xMidYMid slice">
-          <ellipse cx="80" cy="64" rx="44" ry="50" fill="none" stroke="#6E6377" strokeWidth="3" />
-          <path d="M80 20v90M50 50q30 12 60 0M50 72q30 12 60 0M54 92q26 10 52 0" fill="none" stroke="#8F8499" strokeWidth="2.5" />
+          <ellipse cx="80" cy="64" rx="44" ry="50" fill="none" stroke="#6E6767" strokeWidth="3" />
+          <path d="M80 20v90M50 50q30 12 60 0M50 72q30 12 60 0M54 92q26 10 52 0" fill="none" stroke="#8F8786" strokeWidth="2.5" />
         </svg>
       </span>
     );
@@ -97,7 +97,7 @@ export function Reports() {
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="flex min-h-[186px] flex-col items-center justify-center gap-2.5 rounded-[22px] border-[1.5px] border-dashed border-[#C9B8C4] bg-surface/45 p-2.5"
+          className="flex min-h-[186px] flex-col items-center justify-center gap-2.5 rounded-[22px] border-[1.5px] border-dashed border-[#CBB9B5] bg-surface/45 p-2.5"
         >
           <span className="flex h-12 w-12 items-center justify-center rounded-[16px] bg-pink">
             <Icon name="plus" />

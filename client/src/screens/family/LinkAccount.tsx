@@ -87,7 +87,7 @@ export function LinkAccount() {
       {result && (
         <>
           <span className="section-label mb-2.5 mt-5">1 patient found</span>
-          <div className="card flex flex-col gap-3.5 p-4 shadow-[0_0_0_2px_#181818,0_12px_30px_-16px_rgba(214,110,170,.35)]">
+          <div className="card flex flex-col gap-3.5 p-4 shadow-[0_0_0_2px_#181818,0_12px_30px_-16px_rgba(205,60,50,.35)]">
             <span className="flex items-center gap-3">
               <span className="flex h-[52px] w-[52px] items-center justify-center rounded-input bg-lavender font-semibold">{result.initial}</span>
               <span className="flex flex-1 flex-col gap-0.5">

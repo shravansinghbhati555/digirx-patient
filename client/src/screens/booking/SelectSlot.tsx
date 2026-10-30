@@ -77,7 +77,7 @@ export function SelectSlot() {
             >
               <span
                 className="flex h-9 w-9 items-center justify-center rounded-full text-[12px] font-semibold text-ink"
-                style={{ background: p.allowed ? p.color : '#EDE3EA' }}
+                style={{ background: p.allowed ? p.color : '#EEE4E2' }}
               >
                 {p.initials}
               </span>

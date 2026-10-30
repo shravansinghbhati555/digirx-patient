@@ -53,7 +53,7 @@ export function Invoice() {
     <Screen>
       <PageHeader title="Invoice" back="/billing" right={<IconButton icon="share" label="Share invoice" onClick={() => shareOrCopy(`Invoice ${inv.id}`, toast)} />} />
 
-      <div className="relative mt-5 overflow-hidden rounded-[28px] bg-surface shadow-[0_20px_40px_-22px_rgba(120,60,100,.4)]">
+      <div className="relative mt-5 overflow-hidden rounded-[28px] bg-surface shadow-[0_20px_40px_-22px_rgba(120,40,30,.4)]">
         <div className="flex flex-col gap-1 bg-hero p-5">
           <span className="flex items-center justify-between">
             <span className="text-[13px] font-semibold">{clinic?.name}</span>
@@ -78,7 +78,7 @@ export function Invoice() {
             </span>
           ))}
         </div>
-        <div className="mx-5 mt-4 border-t-[1.5px] border-dashed border-[#EADCE4]" />
+        <div className="mx-5 mt-4 border-t-[1.5px] border-dashed border-[#EBDDDA]" />
         <div className="px-5 pt-1">
           {inv.items.map((i) => (
             <div key={i.label} className={`row justify-between text-[14px] ${i.muted ? 'text-text-muted' : ''}`}>
@@ -92,7 +92,7 @@ export function Invoice() {
           </div>
         </div>
         {(inv.reference || inv.gstin) && (
-          <div className="mx-5 mb-[18px] flex flex-wrap justify-between gap-2 rounded-[14px] bg-[#F8F3F6] px-3 py-2.5 text-[12px] text-text-muted">
+          <div className="mx-5 mb-[18px] flex flex-wrap justify-between gap-2 rounded-[14px] bg-[#F9F4F3] px-3 py-2.5 text-[12px] text-text-muted">
             <span>{inv.reference ?? '—'}</span>
             {inv.gstin && <span>GSTIN {inv.gstin}</span>}
           </div>

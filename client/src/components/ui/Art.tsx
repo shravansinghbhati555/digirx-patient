@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 import type { Mood } from '../../types';
 
 /**
- * Expressive elements: flowers, the lavender star and blob faces.
+ * Expressive elements: flowers, the blush star and blob faces.
  * Per the design system, use them on welcome, empty, success and error
  * screens and the check-in row — never inside clinical content.
  */
@@ -15,8 +15,8 @@ interface ArtProps {
 
 const PETALS = [0, 72, 144, 216, 288];
 
-/** Five-petal flower. `bold` has fuller petals (pink hero flower). */
-export function Flower({ size, color = '#F0679F', bold = true, stroke, className, style }: ArtProps & { color?: string; bold?: boolean; stroke?: string }) {
+/** Five-petal flower. `bold` has fuller petals (red hero flower). */
+export function Flower({ size, color = '#EE2B2B', bold = true, stroke, className, style }: ArtProps & { color?: string; bold?: boolean; stroke?: string }) {
   const [cy, rx, ry, r] = bold ? [52, 40, 54, 44] : [50, 34, 52, 40];
   return (
     <svg width={size} height={size} viewBox="0 0 200 200" aria-hidden="true" className={className} style={style}>
@@ -30,7 +30,7 @@ export function Flower({ size, color = '#F0679F', bold = true, stroke, className
   );
 }
 
-export function Star({ size, color = '#B48CF5', className, style }: ArtProps & { color?: string }) {
+export function Star({ size, color = '#FFD3CB', className, style }: ArtProps & { color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 200 200" aria-hidden="true" className={className} style={style}>
       <path
@@ -54,21 +54,21 @@ export interface FaceSpec {
 }
 
 export const moodFaces: Record<Mood, FaceSpec & { label: string }> = {
-  great: { label: 'Great', color: '#FFA7DC', eyes: 'M9 15q2.5-3 5 0M20 15q2.5-3 5 0', mouth: 'M13 21q4 3.5 8 0' },
-  unwell: { label: 'Unwell', color: '#FF8E8E', eyes: 'M9.5 13.5l4 1.5M24.5 13.5l-4 1.5', mouth: 'M13 23q4-3.5 8 0' },
+  great: { label: 'Great', color: '#FF8F8F', eyes: 'M9 15q2.5-3 5 0M20 15q2.5-3 5 0', mouth: 'M13 21q4 3.5 8 0' },
+  unwell: { label: 'Unwell', color: '#FFB547', eyes: 'M9.5 13.5l4 1.5M24.5 13.5l-4 1.5', mouth: 'M13 23q4-3.5 8 0' },
   tired: { label: 'Tired', color: '#9CC9FF', eyes: 'M9.5 15q2 2 4 0M20.5 15q2 2 4 0', mouth: 'M15.5 22h3' },
   anxious: { label: 'Anxious', color: '#C9B2FF', eyes: 'M11.5 13.5v2M22.5 13.5v2', mouth: 'M12.5 22.5q2-2 4.5 0t4.5 0' },
-  okay: { label: 'Okay', color: '#FFB690', eyes: 'M9.5 15h4M20.5 15h4', mouth: 'M14 21.5h6' },
+  okay: { label: 'Okay', color: '#FFC2A8', eyes: 'M9.5 15h4M20.5 15h4', mouth: 'M14 21.5h6' },
 };
 
 export const faces = {
-  happy: { color: '#FFB690', eyes: 'M9 15q2.5-3 5 0M20 15q2.5-3 5 0', mouth: 'M12.5 21q4.5 4 9 0', cheeks: true },
-  laughing: { color: '#FFA7DC', eyes: 'M9.5 14.5q2 2.5 4 0M20.5 14.5q2 2.5 4 0', mouth: 'M13 20.5q4 5 8 0z', mouthFilled: true },
+  happy: { color: '#FFC2A8', eyes: 'M9 15q2.5-3 5 0M20 15q2.5-3 5 0', mouth: 'M12.5 21q4.5 4 9 0', cheeks: true },
+  laughing: { color: '#FF8F8F', eyes: 'M9.5 14.5q2 2.5 4 0M20.5 14.5q2 2.5 4 0', mouth: 'M13 20.5q4 5 8 0z', mouthFilled: true },
   calm: { color: '#C9B2FF', eyes: 'M11.5 13.5v2M22.5 13.5v2', mouth: 'M14 21.5q3 2.5 6 0' },
   sleepy: { color: '#9CC9FF', eyes: 'M9.5 15q2 2 4 0M20.5 15q2 2 4 0', mouth: 'M15.5 22h3' },
   sad: { color: '#9CC9FF', eyes: 'M9.5 15q2 2 4 0M20.5 15q2 2 4 0', mouth: 'M13.5 23q3.5-3 7 0' },
-  upset: { color: '#FF8E8E', eyes: 'M9.5 13.5l4 1.5M24.5 13.5l-4 1.5', mouth: 'M12.5 23q2-2 4.5 0t4.5 0' },
-  smile: { color: '#FFB690', eyes: 'M9 15q2.5-3 5 0M20 15q2.5-3 5 0', mouth: 'M13 21q4 3.5 8 0' },
+  upset: { color: '#FFB547', eyes: 'M9.5 13.5l4 1.5M24.5 13.5l-4 1.5', mouth: 'M12.5 23q2-2 4.5 0t4.5 0' },
+  smile: { color: '#FFC2A8', eyes: 'M9 15q2.5-3 5 0M20 15q2.5-3 5 0', mouth: 'M13 21q4 3.5 8 0' },
 } satisfies Record<string, FaceSpec>;
 
 export function Face({ size, spec, rotate = 0, label, className, style }: ArtProps & { spec: FaceSpec; rotate?: number; label?: string }) {
@@ -93,8 +93,8 @@ export function Face({ size, spec, rotate = 0, label, className, style }: ArtPro
       />
       {spec.cheeks && (
         <>
-          <circle cx="8" cy="19" r="1.6" fill="#F0679F" />
-          <circle cx="26" cy="19" r="1.6" fill="#F0679F" />
+          <circle cx="8" cy="19" r="1.6" fill="#EE2B2B" />
+          <circle cx="26" cy="19" r="1.6" fill="#EE2B2B" />
         </>
       )}
     </svg>
@@ -114,7 +114,7 @@ export function SmileMark({ className }: { className?: string }) {
 /** Flower with a face on top and an optional badge — success/empty/error hero. */
 export function FlowerFace({
   size,
-  flowerColor = '#F0679F',
+  flowerColor = '#EE2B2B',
   face,
   faceRotate = -6,
   badge,

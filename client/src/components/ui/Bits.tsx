@@ -23,7 +23,7 @@ export function Avatar({ initials, color, size = 40, shape = 'round', ring, clas
       : ring === 'surface'
         ? 'border-[3px] border-surface'
         : ring === 'dashed'
-          ? 'border-[1.5px] border-dashed border-[#C9B8C4]'
+          ? 'border-[1.5px] border-dashed border-[#CBB9B5]'
           : '';
   return (
     <span

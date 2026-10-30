@@ -317,7 +317,7 @@ function FilterBody({ data, draft, setDraft }: { data: PortalData; draft: Filter
         value={draft.feeMax}
         onChange={(e) => setDraft({ ...draft, feeMax: Number(e.target.value) })}
         className="fee-range w-full"
-        style={{ background: `linear-gradient(90deg, #FFB690, #FFA7DC ${pct}%, #F1E6EC ${pct}%)` }}
+        style={{ background: `linear-gradient(90deg, #FF8A6B, #F04848 ${pct}%, #F2E7E5 ${pct}%)` }}
       />
 
       <h3 className="mb-2.5 mt-[22px] text-[15px] font-semibold">Consultation type</h3>

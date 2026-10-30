@@ -11,9 +11,9 @@ import type { NotificationKind } from '../../types';
 
 const look: Record<NotificationKind, { icon: IconName; bg: string; color?: string }> = {
   appointment: { icon: 'calendar', bg: '#181818', color: '#FDFCFB' },
-  records: { icon: 'flask', bg: '#FFA7DC' },
+  records: { icon: 'flask', bg: '#FF8F8F' },
   family: { icon: 'family', bg: '#C9B2FF' },
-  medicine: { icon: 'pill', bg: '#FFB690' },
+  medicine: { icon: 'pill', bg: '#FFC2A8' },
   payment: { icon: 'check', bg: '#DDF3E4', color: '#1E6B3A' },
 };
 

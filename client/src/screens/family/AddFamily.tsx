@@ -82,7 +82,7 @@ export function AddFamily() {
 
         <div role="radiogroup" aria-label="Member type" className="mt-[18px] flex flex-col gap-2">
           <OptionCard icon="user" bg="#9CC9FF" title="Add a child or dependant" sub="You manage their profile and bookings" on={mode === 'child'} onClick={() => switchMode('child')} />
-          <OptionCard icon="chat" bg="#FFA7DC" title="Invite an adult" sub="They accept and choose what to share" on={mode === 'invite'} onClick={() => switchMode('invite')} />
+          <OptionCard icon="chat" bg="#FF8F8F" title="Invite an adult" sub="They accept and choose what to share" on={mode === 'invite'} onClick={() => switchMode('invite')} />
           <Link to="/family/link" className="flex w-full items-center gap-3 rounded-[22px] bg-surface/75 p-3.5">
             <span className="flex h-[46px] w-[46px] flex-none items-center justify-center rounded-[16px] bg-lavender">
               <Icon name="link" />
