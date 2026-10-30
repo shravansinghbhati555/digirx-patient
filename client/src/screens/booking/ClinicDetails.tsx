@@ -30,7 +30,7 @@ export function ClinicDetails() {
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${clinic.name}, ${clinic.address}`)}`;
 
   return (
-    <div className="mx-auto w-full tablet:max-w-[880px] tablet:px-9 tablet:pt-10">
+    <div className="mx-auto w-full tablet:px-9 tablet:pt-10">
       <div className="relative h-[270px] overflow-hidden rounded-b-[36px] bg-[linear-gradient(160deg,#FFC2A8_0%,#FF8F8F_70%)] tablet:rounded-[36px]">
         <Flower size={230} className="absolute -right-10 top-[50px] rotate-[16deg]" />
         <Flower size={90} color="#FDFCFB" bold={false} className="absolute left-[150px] top-[150px]" />

@@ -30,8 +30,57 @@ export function SelectSlot() {
     () => (doctor && draft ? bookingDays(doctor, draft.clinicId, addDays(TODAY, week * 7), 7) : []),
     [doctor, draft, week],
   );
-  const slots = useSlots(doctor, draft?.clinicId, draft?.date ?? TODAY, undefined, data.appointments);
-  const groups = slots.groups;
+  // 1. Pehle slots define karo
+const slots = useSlots(
+  doctor,
+  draft?.clinicId,
+  draft?.date ?? TODAY,
+  undefined,
+  data.appointments
+);
+
+// 2. Uske baad groups filter karo
+const groups = useMemo(() => {
+  const now = new Date();
+
+  return slots.groups
+    .map((group) => {
+      const seen = new Set<string>();
+
+      const filteredSlots = group.slots.filter((slot) => {
+        // Remove duplicate times
+        if (seen.has(slot.time)) return false;
+        seen.add(slot.time);
+
+        // Future dates: show all slots
+        if (draft?.date !== TODAY) return true;
+
+        // Convert time to minutes
+        const match = slot.time.match(
+          /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i
+        );
+
+        if (!match) return true;
+
+        let hour = Number(match[1]);
+        const minute = Number(match[2]);
+        const period = match[3].toUpperCase();
+
+        if (period === "PM" && hour !== 12) hour += 12;
+        if (period === "AM" && hour === 12) hour = 0;
+
+        const slotMinutes = hour * 60 + minute;
+        const currentMinutes =
+          now.getHours() * 60 + now.getMinutes();
+
+        // Hide past slots
+        return slotMinutes > currentMinutes;
+      });
+
+      return { ...group, slots: filteredSlots };
+    })
+    .filter((group) => group.slots.length > 0);
+}, [slots.groups, draft?.date]);
 
   // Keep the selected time valid when the date or clinic changes.
   useEffect(() => {

@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, Navigate, NavLink, Outlet, useLocation, useMatches, useNavigate } from 'react-router-dom';
 import { Avatar } from '../components/ui/Bits';
-import { Face, faces } from '../components/ui/Art';
 import { Icon, type IconName } from '../components/ui/Icon';
 import { Screen } from '../components/ui/Layout';
 import { DashboardSkeleton, ErrorState } from '../components/ui/States';
@@ -105,8 +104,12 @@ function Rail({ path, initials, color }: { path: string; initials: string; color
 function Sidebar({ path }: { path: string }) {
   return (
     <aside className="sticky top-0 hidden h-dvh w-60 flex-none flex-col gap-6 overflow-y-auto border-r border-white/90 bg-surface/55 px-5 py-7 desktop:flex">
-      <Link to="/" className="px-2 text-[24px] font-bold tracking-[-0.02em]">
+      {/* <Link to="/" className="px-2 text-[24px] font-bold tracking-[-0.02em]">
         digiRx <span className="text-[13px] font-medium text-text-muted">Patient</span>
+      </Link> */}
+      <Link to="/" className="px-2 text-[24px] font-bold tracking-[-0.02em] inline-flex items-center gap-2">
+      <img src="/logo.png" alt="DigiRx" className="h-9 w-auto object-contain" />
+      <span className="text-[13px] font-medium text-text-muted">Patient</span>
       </Link>
       <nav aria-label="Main" className="flex flex-col gap-1">
         {sideNav.map((item) => {
@@ -125,7 +128,14 @@ function Sidebar({ path }: { path: string }) {
         })}
       </nav>
       <div className="mt-auto flex flex-col gap-2 rounded-[22px] bg-hero p-4">
-        <Face size={40} spec={{ ...faces.smile, color: '#FDFCFB' }} />
+        {/* <Face size={40} spec={{ ...faces.smile, color: '#FDFCFB' }} /> */}
+        <div className="mb-[10px] inline-block">
+        <img
+          src="/logo.png"
+          alt="DigiRx"
+          className="h-10 w-auto object-contain"
+        />
+        </div>
         <span className="text-[15px] font-semibold">Get the app</span>
         <span className="text-[13px] leading-[1.4]">Reminders and reports on your phone.</span>
       </div>
